@@ -26,17 +26,25 @@
 #define YAZ0_MAGIC "Yaz0"
 
 //
+// Default compression level.
+//
+#define YAZ0_DEFAULT_LEVEL 10
+
+//
 // Function status codes.
 //
 enum yaz0_result {
-        YAZ0_OK, // The operation completed successfully.
+        YAZ0_OK,                    // The operation completed successfully.
+        YAZ0_OUT_OF_RANGE,          // The source buffer is too small.
+        YAZ0_SOURCE_TOO_LARGE,      // The source data is too large.
+        YAZ0_DESTINATION_TOO_SMALL, // The destination buffer is too small.
 };
 
 //
 // 16-byte header that marks the start of every yaz0 byte stream.
 //
 struct yaz0_header {
-        uint8_t magic[4];           // Always "Yaz0"
+        char magic[4];              // Always "Yaz0"
         uint32_t uncompressed_size; // Size of the uncompressed data in bytes.
         uint32_t alignment;         // Data alignment in bytes.
         uint32_t reserved;          // Currently unused.
@@ -48,6 +56,11 @@ struct yaz0_header {
 enum yaz0_result yaz0_read_header(uint8_t const* data, size_t size, struct yaz0_header* header);
 
 //
+// Writes a Yaz0 header to a buffer.
+//
+enum yaz0_result yaz0_write_header(uint8_t* data, size_t size, uint32_t uncompressed_size, uint32_t alignment);
+
+//
 // Decompresses the data at src into the destination buffer.
 //
 enum yaz0_result yaz0_inflate(uint8_t* dst, size_t dst_size, uint8_t const* src, size_t src_size);
@@ -55,6 +68,6 @@ enum yaz0_result yaz0_inflate(uint8_t* dst, size_t dst_size, uint8_t const* src,
 //
 // Compresses the data at src into the destination buffer.
 //
-enum yaz0_result yaz0_deflate(uint8_t* dst, uint8_t const* src, size_t size, int level);
+enum yaz0_result yaz0_deflate(uint8_t* dst, size_t dst_size, uint8_t const* src, size_t src_size, int level);
 
 #endif // ZELDA64_YAZ0_H
