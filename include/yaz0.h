@@ -39,6 +39,7 @@ enum yaz0_result {
         YAZ0_SOURCE_TOO_LARGE,      // The source data is too large.
         YAZ0_DESTINATION_TOO_SMALL, // The destination buffer is too small.
         YAZ0_STREAM_ERROR,          // The stream is in an invalid state.
+        YAZ0_INVALID_DATA,          // The data in the file is not invalid.
 };
 
 //

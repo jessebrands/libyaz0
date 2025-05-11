@@ -22,7 +22,8 @@ set(YAZ0_SOURCES
 
 set(YAZ0_TEST_SOURCES
         "tests/deflate_test.cpp"
-        "tests/header_test.cpp")
+        "tests/header_test.cpp"
+        "tests/inflate_test.cpp")
 
 #
 # Library target.
