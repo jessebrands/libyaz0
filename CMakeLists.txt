@@ -15,11 +15,12 @@ set(YAZ0_PUBLIC_API
 
 set(YAZ0_SOURCES
         "src/byteswap.h"
-        "src/header.c"
         "src/deflate.c"
+        "src/header.c"
         "src/inflate.c")
 
 set(YAZ0_TEST_SOURCES
+        "tests/deflate_test.cpp"
         "tests/header_test.cpp")
 
 #

@@ -28,7 +28,7 @@
 //
 // Default compression level.
 //
-#define YAZ0_DEFAULT_LEVEL 10
+#define YAZ0_DEFAULT_LEVEL 9
 
 //
 // Function status codes.
@@ -38,6 +38,7 @@ enum yaz0_result {
         YAZ0_OUT_OF_RANGE,          // The source buffer is too small.
         YAZ0_SOURCE_TOO_LARGE,      // The source data is too large.
         YAZ0_DESTINATION_TOO_SMALL, // The destination buffer is too small.
+        YAZ0_STREAM_ERROR,          // The stream is in an invalid state.
 };
 
 //
@@ -68,6 +69,7 @@ enum yaz0_result yaz0_inflate(uint8_t* dst, size_t dst_size, uint8_t const* src,
 //
 // Compresses the data at src into the destination buffer.
 //
-enum yaz0_result yaz0_deflate(uint8_t* dst, size_t dst_size, uint8_t const* src, size_t src_size, int level);
+enum yaz0_result yaz0_deflate(uint8_t* out, size_t out_size, uint8_t const* in, size_t in_size, int level,
+                              size_t* compressed_size);
 
 #endif // ZELDA64_YAZ0_H
