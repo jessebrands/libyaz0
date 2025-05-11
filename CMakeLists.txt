@@ -6,6 +6,7 @@ project(yaz0
         LANGUAGES C)
 
 option(YAZ0_BUILD_TESTS "Build tests (requires GoogleTest and C++20)" ON)
+option(YAZ0_BIG_ENDIAN "Build in big endian mode" OFF)
 
 #
 # File listings.
@@ -36,8 +37,14 @@ set_target_properties(yaz0 PROPERTIES
 
 target_include_directories(yaz0 PUBLIC "${PROJECT_SOURCE_DIR}/include")
 
+if (YAZ0_BIG_ENDIAN)
+    target_compile_definitions(yaz0 PUBLIC YAZ0_BIG_ENDIAN 1)
+endif ()
+
+#
+# Testing targets and dependencies, if enabled.
+#
 if (YAZ0_BUILD_TESTS)
-    message("Tests are enabled. Enabling C++ language and downloading GoogleTest.")
     enable_language(CXX)
     enable_testing()
 

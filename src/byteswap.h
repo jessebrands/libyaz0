@@ -35,6 +35,19 @@ inline uint32_t yaz0_swap32(uint32_t const x) {
 
 #endif
 
+
+#ifdef YAZ0_BIG_ENDIAN
+//
+// Swaps from native endianness to big endian.
+//
+#define yaz0_to_be_u32(x) x
+
+//
+// Swaps from big endian to native endianness.
+//
+#define yaz0_to_native_u32(x) x
+
+#else
 //
 // Swaps from native endianness to big endian.
 //
@@ -44,5 +57,7 @@ inline uint32_t yaz0_swap32(uint32_t const x) {
 // Swaps from big endian to native endianness.
 //
 #define yaz0_to_native_u32(x) yaz0_swap32(x)
+
+#endif
 
 #endif // YAZ0_BYTESWAP_H
