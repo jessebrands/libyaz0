@@ -27,6 +27,8 @@ enum yaz0_result yaz0_read_header(uint8_t const* restrict data, size_t const siz
                 return YAZ0_OUT_OF_RANGE;
         }
         memcpy(header, data, sizeof(*header));
+        header->uncompressed_size = yaz0_to_native_u32(header->uncompressed_size);
+        header->alignment = yaz0_to_native_u32(header->alignment);
         return YAZ0_OK;
 }
 

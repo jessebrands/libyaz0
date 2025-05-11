@@ -14,8 +14,6 @@
  * Zelda64. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../src/byteswap.h"
-
 #include <gtest/gtest.h>
 
 extern "C" {
@@ -29,7 +27,7 @@ TEST(Header, Read) {
         auto const result = yaz0_read_header(buffer.data(), buffer.size(), &header);
         EXPECT_EQ(result, YAZ0_OK);
         EXPECT_TRUE(strncmp(header.magic, YAZ0_MAGIC, sizeof(header.magic)) == 0);
-        EXPECT_EQ(header.uncompressed_size, yaz0_to_native_u32(0x11223344));
+        EXPECT_EQ(header.uncompressed_size, 0x11223344);
 }
 
 TEST(Header, ReadFailsOnSmallBuffer) {
