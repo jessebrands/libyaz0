@@ -5,8 +5,8 @@ project(yaz0
         HOMEPAGE_URL "https://github.com/jessebrands/libyaz0"
         LANGUAGES C)
 
-option(YAZ0_BUILD_TESTS "Build tests (requires GoogleTest and C++20)" ON)
-option(YAZ0_BIG_ENDIAN "Build in big endian mode" OFF)
+option(ENABLE_TESTS "Build tests (requires GoogleTest and C++20)" ON)
+option(BIG_ENDIAN "Build in big endian mode" OFF)
 
 #
 # File listings.
@@ -34,18 +34,19 @@ add_library(yaz0
 
 set_target_properties(yaz0 PROPERTIES
         C_STANDARD 11
-        C_STANDARD_REQUIRED ON)
+        C_STANDARD_REQUIRED ON
+        C_EXTENSIONS OFF)
 
 target_include_directories(yaz0 PUBLIC "${PROJECT_SOURCE_DIR}/include")
 
-if (YAZ0_BIG_ENDIAN)
-    target_compile_definitions(yaz0 PUBLIC YAZ0_BIG_ENDIAN 1)
+if (BIG_ENDIAN)
+    target_compile_definitions(yaz0 PUBLIC YAZ0_BIG_ENDIAN)
 endif ()
 
 #
 # Testing targets and dependencies, if enabled.
 #
-if (YAZ0_BUILD_TESTS)
+if (ENABLE_TESTS)
     enable_language(CXX)
     enable_testing()
 
