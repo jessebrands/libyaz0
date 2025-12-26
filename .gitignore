@@ -1,0 +1,7 @@
+# ctags
+/tags
+
+# Build artifacts
+*.so*
+*.o
+
