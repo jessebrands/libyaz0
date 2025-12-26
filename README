@@ -1,0 +1,43 @@
+
+                     libyaz0 -- a fast yaz0 implementation
+
+Purpose
+
+	libyaz0 is a small, efficient C library for use in applications that need
+	to handle compressed yaz0 data or wish to compress data using the yaz0
+	algorithm.
+
+Origin
+
+	The libyaz0 library was started in 2025 because of a few problems with
+	other implementations of the yaz0 algorithm.
+
+	First and foremost is speed. Many other implementations of the yaz0
+	algorithm are available but few are aggressively optimized while plenty of
+	headroom for optimization is available. Furthermore, these libraries lack
+	bindings to languages commonly used in the Ocarina of Time Randomizer
+	community such as Python 3 and JavaScript.
+
+	libyaz0 aims to solve these problems by providing an implementation of yaz0
+	that is both correct and fast by using SIMD instructions when available.
+	The library also provides bindings to Python 3 and JavaScript through a
+	Python module and a WebAssembly build respectively.
+
+License
+	
+	libyaz0's code and documentation are covered by the GPL version 3 or (at
+	your option) any later version. See the file COPYING for the full text of
+	this license.
+
+How to compile and install libyaz0
+
+	Download the latest libyaz0 source tarball, and then:
+
+		tar -xf libyaz0-x.y.tar.gz
+		cd libyaz0-x.y
+		make
+
+	You will then need to copy libyaz0.so.x.y to a place where your linker can
+	find it. The yaz0.h header file should also be copied to your include path 
+	under the yaz0 subdirectory.
+
