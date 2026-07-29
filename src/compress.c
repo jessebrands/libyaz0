@@ -20,7 +20,7 @@
 #include "compress.h"
 
 enum yaz0_result
-yaz0_compress_init(struct yaz0_stream* stream, enum yaz0_level const level,
+yaz0_compress_init(struct yaz0_stream* stream, int const level,
                    uint32_t const uncompressed_size) {
     return YAZ0_STREAM_ERROR;
 }

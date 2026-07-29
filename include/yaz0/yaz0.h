@@ -69,7 +69,7 @@ struct yaz0_stream {
 };
 
 enum yaz0_result
-yaz0_compress_init(struct yaz0_stream* stream, enum yaz0_level level,
+yaz0_compress_init(struct yaz0_stream* stream, int level,
                    uint32_t uncompressed_size);
 
 enum yaz0_result
