@@ -20,4 +20,75 @@
 #ifndef LIBYAZ0_YAZ0_H
 #define LIBYAZ0_YAZ0_H
 
+#include <stddef.h>
+#include <stdint.h>
+
+#if defined __cplusplus
+extern "C" {
+#endif
+
+typedef void* (* yaz0_alloc_func)(void* opaque, size_t size);
+
+typedef void (* yaz0_free_func)(void* opaque, void* ptr);
+
+enum yaz0_result {
+    YAZ0_OK = 0,
+    YAZ0_STREAM_END = 1,
+    YAZ0_ERRNO = -1,
+    YAZ0_STREAM_ERROR = -2,
+    YAZ0_DATA_ERROR = -3,
+    YAZ0_MEMORY_ERROR = -4,
+    YAZ0_BUFFER_ERROR = -5,
+};
+
+enum yaz0_flush {
+    YAZ0_NO_FLUSH = 0,
+    YAZ0_FINISH = 1,
+};
+
+enum yaz0_level {
+    YAZ0_DEFAULT_COMPRESSION = -1,
+    YAZ0_NO_COMPRESSION = 0,
+    YAZ0_BEST_COMPRESSION = 9,
+};
+
+struct yaz0_stream {
+    const char* next_in;
+    size_t avail_in;
+    size_t total_in;
+
+    char* next_out;
+    size_t avail_out;
+    size_t total_out;
+
+    void* opaque;
+    yaz0_alloc_func alloc;
+    yaz0_free_func free;
+
+    void* state;
+};
+
+enum yaz0_result
+yaz0_compress_init(struct yaz0_stream* stream, enum yaz0_level level,
+                   uint32_t uncompressed_size);
+
+enum yaz0_result
+yaz0_compress(struct yaz0_stream* stream, enum yaz0_flush flush);
+
+void
+yaz0_compress_end(struct yaz0_stream* stream);
+
+enum yaz0_result
+yaz0_decompress_init(struct yaz0_stream* stream);
+
+enum yaz0_result
+yaz0_decompress(struct yaz0_stream* stream, enum yaz0_flush flush);
+
+void
+yaz0_decompress_end(struct yaz0_stream* stream);
+
+#if defined __cplusplus
+}
+#endif
+
 #endif // LIBYAZ0_YAZ0_H
