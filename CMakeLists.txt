@@ -11,17 +11,30 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 option(YAZ0_TESTS "Enable testing and build testing suite" ON)
 
-add_library(yaz0 SHARED)
-target_sources(yaz0 PRIVATE
+set(YAZ0_SOURCES
         src/yaz0.c
         src/compress.c
         src/decompress.c)
+
+add_library(yaz0 SHARED)
+target_sources(yaz0 PRIVATE ${YAZ0_SOURCES})
 
 target_include_directories(yaz0
         PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
         PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 set_target_properties(yaz0 PROPERTIES
+        OUTPUT_NAME "yaz0"
+        DEBUG_POSTFIX "d")
+
+add_library(yaz0-static STATIC)
+target_sources(yaz0-static PRIVATE ${YAZ0_SOURCES})
+
+target_include_directories(yaz0-static
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+set_target_properties(yaz0-static PROPERTIES
         OUTPUT_NAME "yaz0"
         DEBUG_POSTFIX "d")
 
