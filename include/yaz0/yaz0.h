@@ -53,11 +53,11 @@ enum yaz0_level {
 };
 
 struct yaz0_stream {
-    const char* next_in;
+    uint8_t const* next_in;
     size_t avail_in;
     size_t total_in;
 
-    char* next_out;
+    uint8_t* next_out;
     size_t avail_out;
     size_t total_out;
 
