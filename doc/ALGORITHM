@@ -3,7 +3,8 @@ Brief
     Yaz0 is a compression algorithm developed by Nintendo that has been in use
     in their games since the Nintendo 64. It is a variant of the LZ77
     compression algorithm (Lempel-Ziv 1977, see reference below), specifically
-    a variant on the LZSS algorithm.
+    a variant on the LZSS algorithm. All multi-byte values are stored in
+    big-endian byte order.
 
 Header
 
@@ -29,18 +30,18 @@ Header
 
     The alignment hint has no bearing to the algorithm, it is a hint used by
     applications to align the uncompressed data in memory. Well-formed
-    implementations should just pass this value transiently.
+    implementations should preserve this value unchanged.
 
     The last four bytes are currently unused by any implementation and are
     reserved for future use by Nintendo. Well-formed implementations should
-    just pass this value transiently.
+    preserve this value unchanged.
 
 Blocks
 
     After the header comes zero or more blocks.
 
     Literals and pairs are stored in groups of eight called blocks. Every
-    block is at least 1 byte and at most 25 bytes long. The first byte in
+    block is at least 2 bytes and at most 25 bytes long. The first byte in
     every block is a bitmask called the code byte. The most significant bit in
     the code byte represents the first literal or pair, and the least
     significant bit the last literal or pair. A raised bit indicates a literal
@@ -82,7 +83,7 @@ Compression Algorithm
             else
                 match := longest occurrence of input at window
 
-                if match exists then
+                if match exists and match length >= 3 then
                     d := distance to start of match
                     l := length of match
 
@@ -92,7 +93,7 @@ Compression Algorithm
                         deferred := true
                         dd := distance to start of match
                         dl := length of match
-                        d := ld
+                        d := 0
                         l := 1
                     end
                 else
@@ -103,8 +104,8 @@ Compression Algorithm
 
             output (d, l)
 
-            discard l + 1 chars from front of window
-            s := pop l + 1 chars from front of input
+            discard l chars from front of window
+            s := pop l chars from front of input
             append s to back of window
         end
 
@@ -112,8 +113,8 @@ Compression Algorithm
     occurrences of "strings" (bytes) found within a sliding window by encoding
     them as length-distance pairs. If no match occurs anywhere in the previous
     4096 bytes, the compressor will encode a literal value. To speed up
-    compression at the cost of size, the decompressor can reduce the size of
-    the window.
+    compression at the cost of size, the compressor can reduce the size of the
+    window.
 
     Yaz0 also defers the selection of matches with a lazy evaluation mechanism.
     After a match of length L has been found, the algorithm will search for
@@ -150,8 +151,9 @@ Decompression Algorithm
                     l := b2 + 18
                 end
 
-                bytes := output[-d .. -d+l]
-                append bytes to output
+                repeat l times
+                    append output[-d] to output
+                end
             end
 
             cb := cb << 1
