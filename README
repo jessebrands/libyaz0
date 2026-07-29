@@ -1,0 +1,41 @@
+Purpose
+
+    libyaz0 is a fast and efficient implementation of the Yaz0 compression
+    algorithm used by Nintendo in their games since the Nintendo 64.
+
+Origin
+
+    The libyaz0 project was started in 2026 to address issues in existing Yaz0
+    implementations and to provide a better (de)compressor for the Ocarina of
+    Time Randomizer project.
+
+    First and foremost, existing implementations of the algorithm usually
+    operate on large buffers that require both the input and output files to
+    be fully loaded into memory. This poses a problem for large files and
+    constrained memory environments.
+
+    Furthermore, many implementations leave room for improvement in terms of
+    performance. libyaz0 aims to make use of modern CPU vectorization
+    instructions such as SSE2, AVX2, and ARM Neon where possible.
+
+    Lastly, most implementations are brittle and poorly tested. libyaz0 aims
+    to include a comprehensive test suite to verify the correctness of the
+    implementation.
+
+License
+
+    libyaz0's code and documentation are covered by version 3 of the GNU
+    Lesser General Public License or, at your option, any later version. See
+    the file COPYING for the full text of this license.
+
+Compiling
+
+    Download the latest source tarball, and then:
+
+        tar -xvf libyaz0-x.y.tar.gz
+        cmake -DCMAKE_BUILD_TYPE=Release -S ./libyaz0-x.y -B /path/to/build-dir
+        cmake --build /path/to/build-dir
+        cmake --install /path/to/build-dir --prefix /path/to/install-dir
+
+    You will need CMake 3.20 or later, as well as a C compiler that supports
+    the C99 standard.
