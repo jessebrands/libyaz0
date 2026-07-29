@@ -9,16 +9,16 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-add_library(${PROJECT_NAME} SHARED)
-target_sources(${PROJECT_NAME} PRIVATE
+add_library(yaz0 SHARED)
+target_sources(yaz0 PRIVATE
         src/yaz0.c
         src/compress.c
         src/decompress.c)
 
-target_include_directories(${PROJECT_NAME}
+target_include_directories(yaz0
         PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
         PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
+set_target_properties(yaz0 PROPERTIES
         OUTPUT_NAME "yaz0"
         DEBUG_POSTFIX "d")
