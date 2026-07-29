@@ -11,10 +11,13 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 add_library(${PROJECT_NAME} SHARED)
 target_sources(${PROJECT_NAME} PRIVATE
-        src/yaz0.c)
+        src/yaz0.c
+        src/compress.c
+        src/decompress.c)
 
 target_include_directories(${PROJECT_NAME}
-        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         OUTPUT_NAME "yaz0"
