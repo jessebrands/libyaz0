@@ -8,3 +8,14 @@ project(libyaz0
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
+
+add_library(${PROJECT_NAME} SHARED)
+target_sources(${PROJECT_NAME} PRIVATE
+        src/yaz0.c)
+
+target_include_directories(${PROJECT_NAME}
+        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+        OUTPUT_NAME "yaz0"
+        DEBUG_POSTFIX "d")
