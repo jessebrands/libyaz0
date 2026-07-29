@@ -1,0 +1,185 @@
+Brief
+
+    Yaz0 is a compression algorithm developed by Nintendo that has been in use
+    in their games since the Nintendo 64. It is a variant of the LZ77
+    compression algorithm (Lempel-Ziv 1977, see reference below), specifically
+    a variant on the LZSS algorithm.
+
+Header
+
+    All Yaz0 files start with a 16-byte header.
+
+        +----------+------------+--------------------------------------+
+        |  offset  |    type    |             Description              |
+        +----------+------------+--------------------------------------+
+        |       0  |   char[4]  |  Magic constant ("Yaz0")             |
+        |       4  |  uint32_t  |  Size of uncompressed data in bytes  |
+        |       8  |  uint32_t  |  Alignment hint                      |
+        |      12  |   char[4]  |  Unused                              |
+        +----------+------------+--------------------------------------+
+
+    The first field in the header is a 4-byte magic constant, the string
+    "Yaz0". Well-formed implementations should reject any data that does not
+    start with these bytes.
+
+    The second field in the header is the size of the uncompressed data in
+    bytes, well-formed implementations will use this value to confirm that all
+    bytes have been read or written during compression and decompression
+    respectively.
+
+    The alignment hint has no bearing to the algorithm, it is a hint used by
+    applications to align the uncompressed data in memory. Well-formed
+    implementations should just pass this value transiently.
+
+    The last four bytes are currently unused by any implementation and are
+    reserved for future use by Nintendo. Well-formed implementations should
+    just pass this value transiently.
+
+Blocks
+
+    After the header comes zero or more blocks.
+
+    Literals and pairs are stored in groups of eight called blocks. Every
+    block is at least 1 byte and at most 25 bytes long. The first byte in
+    every block is a bitmask called the code byte. The most significant bit in
+    the code byte represents the first literal or pair, and the least
+    significant bit the last literal or pair. A raised bit indicates a literal
+    encoding, and a low bit indicates a length-distance encoding.
+
+    Length-distance pairs can be encoded as either a 2-byte short encoding or a
+    3-byte long encoding. Lengths and distances are stored as biased values to
+    increase the efficiency of the compressed data.
+
+    A short encoding stores the length in the high nibble of the first byte,
+    and stores the distance in the low nibble of the first byte and second
+    byte. A bias of 1 is added to the distance, and a bias of 2 is added to the
+    length.
+
+        d = 1 + ((b[0] & 0xF) << 8 | b[1])
+        l = 2 + (b[0] >> 4)
+
+    If the high nibble of the first byte is set to zero, the pair is encoded
+    in three bytes instead. The length can be read from the third byte by
+    adding a bias of 18 to it.
+
+        d =  1 + ((b[0] & 0xF) << 8 | b[1])
+        l = 18 + b[2]
+
+    As such, the shortest distance that can be encoded is 1 byte, and the
+    longest distance that can be encoded is 4096 bytes. The shortest length
+    that can be encoded is 3 bytes, and the longest length is 273 bytes.
+
+Compression Algorithm
+
+    The following pseudocode is a reproduction of the Yaz0 sliding window
+    compression algorithm.
+
+        while input is not empty do
+            if deferred then
+                deferred := false
+                d := dd
+                l := dl
+            else
+                match := longest occurrence of input at window
+
+                if match exists then
+                    d := distance to start of match
+                    l := length of match
+
+                    match := longest occurrence of input at window + 1
+
+                    if match exists and match length >= l + 2 then
+                        deferred := true
+                        dd := distance to start of match
+                        dl := length of match
+                        d := ld
+                        l := 1
+                    end
+                else
+                    d := 0
+                    l := 1
+                end
+            end
+
+            output (d, l)
+
+            discard l + 1 chars from front of window
+            s := pop l + 1 chars from front of input
+            append s to back of window
+        end
+
+    The compression algorithm is a variation of LZSS. It replaces repeated
+    occurrences of "strings" (bytes) found within a sliding window by encoding
+    them as length-distance pairs. If no match occurs anywhere in the previous
+    4096 bytes, the compressor will encode a literal value. To speed up
+    compression at the cost of size, the decompressor can reduce the size of
+    the window.
+
+    Yaz0 also defers the selection of matches with a lazy evaluation mechanism.
+    After a match of length L has been found, the algorithm will search for
+    another match at the next input byte. If the found match is longer than the
+    current match, the compressor will encode a literal now and encode the
+    deferred match later. This deferred match is often called a lookahead match
+    by other implementations.
+
+Decompression Algorithm
+
+    The following pseudocode is a reproduction of the Yaz0 decompression
+    algorithm.
+
+        while input is not empty do
+            if rem is 0 then
+                cb := read byte at input
+                rem := 8
+            end
+
+            lit := cb & most significant bit
+
+            if lit then
+                b := read byte at input
+                append b to output
+            else
+                b0 := read byte at input
+                b1 := read byte at input
+
+                d := 1 + ((b0 & 0xF) << 8 | b1)
+                l := 2 + (b0 >> 4)
+
+                if l is less than 3 then
+                    b2 := read byte at input
+                    l := b2 + 18
+                end
+
+                bytes := output[-d .. -d+l]
+                append bytes to output
+            end
+
+            cb := cb << 1
+            rem := rem - 1
+        end
+
+    Decompressing a Yaz0 encoded file is fast and trivial, making it very
+    well-suited for use in video games to compress assets. While compression is
+    very slow, decompression requires no state other than the last 4096 bytes
+    of decoded data.
+
+    The only pitfall in decompression that must be handled with care is that
+    the last group can be a partial group. This is why decompression must stop
+    immediately when the amount of bytes written to output is equal to the
+    uncompressed size reported in the header.
+
+Conclusion
+
+    I hope that this write down of the Yaz0 algorithm clears things up. There
+    is a lot of information on the internet about this algorithm that is wrong
+    or incomplete, and I hope that this document will prove helpful to anyone
+    trying to understand it.
+
+    Jesse Gerard Brands
+    jesse@jgbrands.nl
+
+References
+
+    [LZ77]
+    Ziv J., Lempel A., "A Universal Algorithm for Sequential Data Compression,"
+    IEEE Transactions on Information Theory, Vol. 23, No. 3, pp. 337-343.
