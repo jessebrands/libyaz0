@@ -252,7 +252,7 @@ yaz0_decompress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
                 return state->error;
 
             case YAZ0_DECOMPRESS_DONE:
-                return YAZ0_OK;
+                return YAZ0_STREAM_END;
 
             default:
                 return YAZ0_STREAM_ERROR;
