@@ -91,6 +91,20 @@ decompress_header(struct yaz0_decompress_state* state, enum yaz0_flush const flu
         return decompress_continue(state, YAZ0_DECOMPRESS_DONE, result);
     }
 
+    return decompress_continue(state, YAZ0_DECOMPRESS_START_BLOCK, result);
+}
+
+static enum yaz0_step
+decompress_start_block(struct yaz0_decompress_state* state, enum yaz0_flush const flush, enum yaz0_result* result) {
+    if (!YAZ0_IO_SUCCESS(yaz0_stream_read_byte(state->common.stream, &state->group_bitmask))) {
+        if (flush == YAZ0_FINISH) {
+            return decompress_error(state, YAZ0_TRUNCATED, result);
+        }
+
+        return decompress_suspend(result);
+    }
+
+    state->group_remaining = YAZ0_TOKENS_PER_BLOCK;
     return decompress_continue(state, YAZ0_DECOMPRESS_DONE, result);
 }
 
@@ -111,6 +125,10 @@ yaz0_decompress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
         switch (state->mode) {
             case YAZ0_DECOMPRESS_HEADER:
                 step = decompress_header(state, flush, &result);
+                break;
+
+            case YAZ0_DECOMPRESS_START_BLOCK:
+                step = decompress_start_block(state, flush, &result);
                 break;
 
             case YAZ0_DECOMPRESS_DONE:

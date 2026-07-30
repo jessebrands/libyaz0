@@ -26,6 +26,7 @@
 
 #define YAZ0_MAGIC "Yaz0"
 #define YAZ0_MAX_DISTANCE 4096
+#define YAZ0_TOKENS_PER_BLOCK 8
 
 enum yaz0_step {
     YAZ0_STEP_CONTINUE,

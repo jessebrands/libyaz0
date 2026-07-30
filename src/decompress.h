@@ -25,6 +25,7 @@
 enum yaz0_decompress_mode {
    YAZ0_DECOMPRESS_HEADER,
    YAZ0_DECOMPRESS_DONE,
+   YAZ0_DECOMPRESS_START_BLOCK,
    YAZ0_DECOMPRESS_ERROR,
 };
 
@@ -38,6 +39,9 @@ struct yaz0_decompress_state {
    uint8_t history[YAZ0_MAX_DISTANCE];
    size_t history_pos;
    size_t remaining;
+
+   uint8_t group_bitmask;
+   unsigned group_remaining;
 };
 
 #endif //LIBYAZ0_DECOMPRESS_H
