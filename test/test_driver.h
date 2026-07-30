@@ -46,8 +46,7 @@ struct run_result
 run_decompress(uint8_t const* data, size_t size);
 
 bool
-assert_run(struct run_result run, size_t expected_in,
-           uint8_t const* expected, size_t expected_size);
+assert_run(struct run_result run);
 
 bool
 assert_compress(uint8_t const* data, size_t data_size, int level,
