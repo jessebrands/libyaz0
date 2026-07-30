@@ -63,7 +63,7 @@ decompress_continue(struct yaz0_decompress_state* state, enum yaz0_decompress_mo
     return YAZ0_STEP_CONTINUE;
 }
 
-enum yaz0_step
+static enum yaz0_step
 decompress_header(struct yaz0_decompress_state* state, enum yaz0_flush const flush, enum yaz0_result* result) {
     size_t const want = 16 - state->history_pos;
     uint8_t* header_buf = &state->history[state->history_pos];
