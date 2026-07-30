@@ -102,11 +102,8 @@ def extract_compressed_file(entry, filename):
         return data
 
 
-def extract_uncompressed_file(entry, filename):
+def extract_uncompressed_file(start, size, filename):
     with open(filename, 'rb') as file:
-        start = entry[0]
-        size = entry[1] - entry[0]
-
         if size <= 0:
             return None
 
@@ -184,8 +181,14 @@ def main():
         with open(destination, "wb") as out_file:
             out_file.write(file_a)
 
+        # Nintendo 64 Zelda games store files with padded bytes.
+        # We need to ensure we actually get the real size, which is fortunately
+        # stored in the Yaz0 header.
+        header = struct.unpack('>4sIII', file_a[0:16])
+        uncompressed_size = header[1]
+
         destination = os.path.join(out_path, f"{i:04X}.bin")
-        file_b = extract_uncompressed_file(table_b[i], filename_b)
+        file_b = extract_uncompressed_file(table_b[i][0], uncompressed_size, filename_b)
         if file_b and is_yaz0_file(file_b):
             continue
 
