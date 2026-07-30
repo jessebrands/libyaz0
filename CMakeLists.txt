@@ -15,7 +15,8 @@ set(YAZ0_SOURCES
         src/yaz0.c
         src/common.c
         src/compress.c
-        src/decompress.c)
+        src/decompress.c
+        src/stream.c)
 
 add_library(yaz0 SHARED)
 target_sources(yaz0 PRIVATE ${YAZ0_SOURCES})
