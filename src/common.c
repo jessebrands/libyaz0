@@ -65,7 +65,7 @@ yaz0_free(struct yaz0_stream const* stream, void* ptr) {
     }
 
     struct yaz0_common_state const* state = yaz0_get_common_state(stream);
-    if (state != NULL && state->alloc != NULL) {
+    if (state != NULL && state->free != NULL) {
         return state->free(state->opaque, ptr);
     }
 
