@@ -13,6 +13,7 @@ option(YAZ0_TESTS "Enable testing and build testing suite" ON)
 
 set(YAZ0_SOURCES
         src/yaz0.c
+        src/common.c
         src/compress.c
         src/decompress.c)
 
