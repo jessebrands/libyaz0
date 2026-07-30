@@ -66,3 +66,20 @@ yaz0_write_header(struct yaz0_header const* header, uint8_t* dst, size_t const s
     memcpy(dst + 12, header->reserved, 4);
     return YAZ0_OK;
 }
+
+char const*
+yaz0_result_name(enum yaz0_result const result) {
+    switch (result) {
+        case YAZ0_OK: return "YAZ0_OK";
+        case YAZ0_STREAM_END: return "YAZ0_STREAM_END";
+        case YAZ0_ERRNO: return "YAZ0_ERRNO";
+        case YAZ0_STREAM_ERROR: return "YAZ0_STREAM_ERROR";
+        case YAZ0_DATA_ERROR: return "YAZ0_DATA_ERROR";
+        case YAZ0_MEMORY_ERROR: return "YAZ0_MEMORY_ERROR";
+        case YAZ0_BUFFER_ERROR: return "YAZ0_BUFFER_ERROR";
+        case YAZ0_TRUNCATED: return "YAZ0_TRUNCATED";
+        case YAZ0_BAD_HEADER: return "YAZ0_BAD_HEADER";
+    }
+
+    return "<invalid value>";
+}

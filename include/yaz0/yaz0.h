@@ -102,6 +102,9 @@ yaz0_read_header(uint8_t const* data, size_t size, struct yaz0_header* header);
 enum yaz0_result
 yaz0_write_header(struct yaz0_header const* header, uint8_t* dst, size_t size);
 
+char const*
+yaz0_result_name(enum yaz0_result result);
+
 #if defined __cplusplus
 }
 #endif
