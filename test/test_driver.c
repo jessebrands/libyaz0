@@ -78,13 +78,14 @@ cleanup_stream:
 struct run_result run_decompress(uint8_t const* data, size_t size) {
     struct run_result run = {0};
 
-    if (size < 16) {
-        fprintf(stderr, "FAILED: Input is too small to be a Yaz0 stream\n");
-        run.result = YAZ0_DATA_ERROR;
+    struct yaz0_header header = {0};
+    run.result = yaz0_read_header(data, size, &header);
+    if (run.result != YAZ0_OK) {
+        fprintf(stderr, "FAILED: Input is not a Yaz0 file\n");
         return run;
     }
 
-    if (memcmp(data, "Yaz0", 4) != 0) {
+    if (memcmp(header.magic, "Yaz0", 4) != 0) {
         fprintf(stderr, "FAILED: Input is not a Yaz0 stream\n");
         run.result = YAZ0_DATA_ERROR;
         return run;
@@ -97,11 +98,7 @@ struct run_result run_decompress(uint8_t const* data, size_t size) {
         return run;
     }
 
-    // TODO: Implement proper library API for this at some point.
-    size_t const out_size =
-            ((size_t) data[4] << 24) | ((size_t) data[5] << 16) |
-            ((size_t) data[6] << 8) | ((size_t) data[7]);
-
+    size_t const out_size = header.uncompressed_size;
     run.out = malloc(out_size > 0 ? out_size : 1);
     if (run.out == NULL) {
         fprintf(stderr, "ERROR:  Failed to allocate output buffer\n");
