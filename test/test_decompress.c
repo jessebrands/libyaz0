@@ -1,4 +1,4 @@
-/* test_compress.c: decompression test fixture
+/* test_decompress.c: decompression test fixture
    Copyright (C) 2026 Jesse Gerard Brands
 
    This file is part of libyaz0.
@@ -22,47 +22,16 @@
 
 #include "test_driver.h"
 
-int main(void) {
-   uint8_t const data[] = {
-      0x59, 0x61, 0x7A, 0x30, // Yaz0 magic
-      0x00, 0x00, 0x00, 0x00, // Uncompressed size
-      0x00, 0x00, 0x00, 0x00, // Alignment
-      0x00, 0x00, 0x00, 0x00, // Reserved
-  };
+int main(int argc, char** argv) {
+    if (argc < 3) {
+        fprintf(stderr, "usage: test_decompress [file] [expected_file]\n");
+        return EXIT_FAILURE;
+    }
 
-   struct run_result const run = run_decompress(data, sizeof data);
+    char const* in_filename = argv[1];
+    char const* expected_filename = argv[2];
 
-   if (run.result < YAZ0_OK) {
-      fprintf(
-          stderr,
-          "FAILED: Expected run.result >= YAZ0_OK (0)\n"
-          "          Actual run.result  = %d\n",
-          run.result
-      );
-      return EXIT_FAILURE;
-   }
-
-   if (run.total_in != sizeof data) {
-      fprintf(
-          stderr,
-          "FAILED: Expected run.total_in = %zu\n"
-          "          Actual run.total_in = %zu\n",
-          sizeof data,
-          run.total_in
-      );
-      return EXIT_FAILURE;
-   }
-
-   if (run.total_out != 0) {
-      fprintf(
-          stderr,
-          "FAILED: Expected run.total_out = %zu\n"
-          "          Actual run.total_out = %zu\n",
-          0,
-          run.total_out
-      );
-      return EXIT_FAILURE;
-   }
-
-   return EXIT_SUCCESS;
+    return assert_decompress_file(in_filename, expected_filename)
+               ? EXIT_SUCCESS
+               : EXIT_FAILURE;
 }

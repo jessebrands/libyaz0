@@ -20,6 +20,7 @@
 #ifndef LIBYAZ0_TEST_DRIVER_H
 #define LIBYAZ0_TEST_DRIVER_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -43,5 +44,23 @@ run_compress(uint8_t const* data, size_t size, int level);
 */
 struct run_result
 run_decompress(uint8_t const* data, size_t size);
+
+bool
+assert_run(struct run_result run, size_t expected_in,
+           uint8_t const* expected, size_t expected_size);
+
+bool
+assert_compress(uint8_t const* data, size_t data_size, int level,
+                uint8_t const* expected, size_t expected_size);
+
+bool
+assert_decompress(uint8_t const* data, size_t data_size,
+                  uint8_t const* expected, size_t expected_size);
+
+bool
+assert_compress_file(char const* filename, int level, char const* expected_filename);
+
+bool
+assert_decompress_file(char const* filename, char const* expected_filename);
 
 #endif //LIBYAZ0_TEST_DRIVER_H

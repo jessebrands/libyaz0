@@ -22,63 +22,16 @@
 
 #include "test_driver.h"
 
-int main(void) {
-    uint8_t const expected[] = {
-        0x59, 0x61, 0x7A, 0x30, // Yaz0 magic
-        0x00, 0x00, 0x00, 0x00, // Uncompressed size
-        0x00, 0x00, 0x00, 0x00, // Alignment
-        0x00, 0x00, 0x00, 0x00, // Reserved
-    };
-
-    struct run_result const run = run_compress(
-        NULL, 0,
-        YAZ0_DEFAULT_COMPRESSION
-    );
-
-    if (run.result < YAZ0_OK) {
-        fprintf(
-            stderr,
-            "FAILED: Expected run.result >= YAZ0_OK (0)\n"
-            "          Actual run.result  = %d\n",
-            run.result
-        );
+int main(int argc, char** argv) {
+    if (argc < 3) {
+        fprintf(stderr, "usage: test_compress [file] [expected_file]\n");
         return EXIT_FAILURE;
     }
 
-    if (run.total_in != 0) {
-        fprintf(
-            stderr,
-            "FAILED: Expected run.total_in = %zu\n"
-            "          Actual run.total_in = %zu\n",
-            (size_t) 0,
-            run.total_in
-        );
-        return EXIT_FAILURE;
-    }
+    char const* in_filename = argv[1];
+    char const* expected_filename = argv[2];
 
-    if (run.total_out != sizeof expected) {
-        fprintf(
-            stderr,
-            "FAILED: Expected run.total_out = %zu\n"
-            "          Actual run.total_out = %zu\n",
-            sizeof expected,
-            run.total_out
-        );
-        return EXIT_FAILURE;
-    }
-
-    for (size_t i = 0; i < sizeof expected; ++i) {
-        if (expected[i] != run.out[i]) {
-            fprintf(
-                stderr,
-                "FAILED: Expected run.out[%zu] = 0x%02X\n"
-                "          Actual run.out[%zu] = 0x%02X\n",
-                i, expected[i],
-                i, run.out[i]
-            );
-            return EXIT_FAILURE;
-        }
-    }
-
-    return EXIT_SUCCESS;
+    return assert_compress_file(in_filename, YAZ0_DEFAULT_COMPRESSION, expected_filename)
+               ? EXIT_SUCCESS
+               : EXIT_FAILURE;
 }
