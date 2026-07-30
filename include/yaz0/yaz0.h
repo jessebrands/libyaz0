@@ -52,6 +52,13 @@ enum yaz0_level {
     YAZ0_BEST_COMPRESSION = 9,
 };
 
+struct yaz0_header {
+    char magic[4];
+    uint32_t uncompressed_size;
+    uint32_t alignment;
+    char reserved[4];
+};
+
 struct yaz0_stream {
     uint8_t const* next_in;
     size_t avail_in;
