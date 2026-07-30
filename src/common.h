@@ -24,6 +24,9 @@
 
 #include "yaz0/yaz0.h"
 
+#define YAZ0_MAGIC "Yaz0"
+#define YAZ0_MAX_DISTANCE 4096
+
 enum yaz0_step {
     YAZ0_STEP_CONTINUE,
     YAZ0_STEP_RETURN,
