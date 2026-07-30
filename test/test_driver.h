@@ -49,7 +49,16 @@ struct run_result
 run_decompress(uint8_t const* data, size_t size);
 
 bool
-assert_run(struct run_result run);
+assert_run(struct run_result run, enum yaz0_result expected);
+
+bool
+assert_total_in(struct run_result run, size_t expected, size_t lenience);
+
+bool
+assert_total_out(struct run_result run, size_t expected, size_t lenience);
+
+bool
+assert_out(struct run_result run, uint8_t const* expected, size_t expected_size);
 
 bool
 assert_compress(uint8_t const* data, size_t data_size, int level,

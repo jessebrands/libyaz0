@@ -148,66 +148,121 @@ struct run_result run_decompress(uint8_t const* data, size_t const size) {
 }
 
 bool
-assert_run(struct run_result run) {
-    bool all_passed = true;
-    if (run.result != YAZ0_STREAM_END) {
+assert_run(struct run_result const run, enum yaz0_result const expected) {
+    if (run.result != expected) {
         fprintf(
             stderr,
-            "FAILED: Expected run.result = YAZ0_STREAM_END (1)\n"
-            "          Actual run.result = %d\n",
-            run.result
+            "FAILED: Expected run.result = %s (%d)\n"
+            "          Actual run.result = %s (%d)\n",
+            yaz0_result_name(expected), expected,
+            yaz0_result_name(run.result), run.result
         );
-        all_passed = false;
+
+        return false;
     }
 
-    return all_passed;
+    return true;
+}
+
+bool
+assert_total_in(struct run_result const run, size_t const expected, size_t const lenience) {
+    if (lenience > 0) {
+        if (run.total_in > expected || expected - run.total_in >= lenience) {
+            fprintf(
+                stderr,
+                "FAILED: Expected run.total_in <= %zu and %zu - run.total_in < %zu\n"
+                "          Actual run.total_in  = %zu\n",
+                expected, expected, lenience,
+                run.total_in
+            );
+            return false;
+        }
+    } else {
+        if (run.total_in != expected) {
+            fprintf(
+                stderr,
+                "FAILED: Expected run.total_in = %zu\n"
+                "          Actual run.total_in = %zu\n",
+                expected,
+                run.total_in
+            );
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool
+assert_total_out(struct run_result const run, size_t const expected, size_t const lenience) {
+    if (lenience > 0) {
+        if (run.total_out > expected || expected - run.total_out >= lenience) {
+            fprintf(
+                stderr,
+                "FAILED: Expected run.total_out <= %zu and %zu - run.total_out < %zu\n"
+                "          Actual run.total_out  = %zu\n",
+                expected, expected, lenience,
+                run.total_out
+            );
+            return false;
+        }
+    } else {
+        if (run.total_out != expected) {
+            fprintf(
+                stderr,
+                "FAILED: Expected run.total_out = %zu\n"
+                "          Actual run.total_out = %zu\n",
+                expected,
+                run.total_out
+            );
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool
+assert_out(struct run_result const run, uint8_t const* expected, size_t const expected_size) {
+    if (run.out == NULL || expected == NULL) {
+        return true;
+    }
+
+    size_t const count = run.total_out < expected_size
+                             ? run.total_out
+                             : expected_size;
+
+    for (size_t i = 0; i < count; ++i) {
+        if (expected[i] == run.out[i]) {
+            continue;
+        }
+        fprintf(
+            stderr,
+            "FAILED: Expected run.out[%zu] = 0x%02X\n"
+            "          Actual run.out[%zu] = 0x%02X\n",
+            i, expected[i],
+            i, run.out[i]
+        );
+        return false;
+    }
+
+    return true;
 }
 
 bool
 assert_compress(uint8_t const* data, size_t const data_size, int const level,
                 uint8_t const* expected, size_t const expected_size) {
     struct run_result const run = run_compress(data, data_size, level);
-    bool passed = assert_run(run);
+    bool passed = assert_run(run, YAZ0_STREAM_END);
 
-    if (run.total_in != data_size) {
-        fprintf(
-            stderr,
-            "FAILED: Expected run.total_in = %zu\n"
-            "          Actual run.total_in = %zu\n",
-            data_size,
-            run.total_in
-        );
+    if (!assert_total_in(run, data_size, 0)) {
         passed = false;
     }
-
-    // Files extracted from Nintendo 64 ROMs are padded to a multiple of 16 bytes.
-    // We need to give a little leniency to this assertion, or it will fail good results.
-    if (run.total_out > expected_size || expected_size - run.total_out >= 16) {
-        fprintf(
-            stderr,
-            "FAILED: Expected run.total_out <= %zu AND %zu - run.total_out < 16\n"
-            "          Actual run.total_out  = %zu\n",
-            expected_size, expected_size,
-            run.total_out
-        );
+    if (!assert_total_out(run, expected_size, 16)) {
         passed = false;
     }
-
-    if (run.out != NULL && expected != NULL && run.total_out <= expected_size) {
-        for (size_t i = 0; i < run.total_out; ++i) {
-            if (expected[i] == run.out[i]) {
-                continue;
-            }
-            fprintf(
-                stderr,
-                "FAILED: Expected run.out[%zu] = 0x%02X\n"
-                "          Actual run.out[%zu] = 0x%02X\n",
-                i, expected[i],
-                i, run.out[i]
-            );
-            passed = false;
-            break;
-        }
+    if (!assert_out(run, expected, expected_size)) {
+        passed = false;
     }
 
     free(run.out);
@@ -218,47 +273,16 @@ bool
 assert_decompress(uint8_t const* data, size_t const data_size,
                   uint8_t const* expected, size_t const expected_size) {
     struct run_result const run = run_decompress(data, data_size);
-    bool passed = assert_run(run);
+    bool passed = assert_run(run, YAZ0_STREAM_END);
 
-    // Files extracted from Nintendo 64 ROMs are padded to a multiple of 16 bytes.
-    // We need to give a little leniency to this assertion, or it will fail good results.
-    if (run.total_in > data_size || data_size - run.total_in >= 16) {
-        fprintf(
-            stderr,
-            "FAILED: Expected run.total_in <= %zu AND %zu - run.total_in < 16\n"
-            "          Actual run.total_in  = %zu\n",
-            data_size, data_size,
-            run.total_in
-        );
+    if (!assert_total_in(run, data_size, 16)) {
         passed = false;
     }
-
-    if (run.total_out != expected_size) {
-        fprintf(
-            stderr,
-            "FAILED: Expected run.total_out = %zu\n"
-            "          Actual run.total_out = %zu\n",
-            expected_size,
-            run.total_out
-        );
+    if (!assert_total_out(run, expected_size, 0)) {
         passed = false;
     }
-
-    if (run.out != NULL && expected != NULL && run.total_out == expected_size) {
-        for (size_t i = 0; i < run.total_out; ++i) {
-            if (expected[i] == run.out[i]) {
-                continue;
-            }
-            fprintf(
-                stderr,
-                "FAILED: Expected run.out[%zu] = 0x%02X\n"
-                "          Actual run.out[%zu] = 0x%02X\n",
-                i, expected[i],
-                i, run.out[i]
-            );
-            passed = false;
-            break;
-        }
+    if (!assert_out(run, expected, expected_size)) {
+        passed = false;
     }
 
     free(run.out);
