@@ -24,6 +24,11 @@
 
 #include "yaz0/yaz0.h"
 
+enum yaz0_step {
+    YAZ0_STEP_CONTINUE,
+    YAZ0_STEP_RETURN,
+};
+
 enum yaz0_kind {
     YAZ0_KIND_COMPRESSOR = 1,
     YAZ0_KIND_DECOMPRESSOR = 2,

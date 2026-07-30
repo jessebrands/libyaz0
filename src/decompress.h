@@ -22,8 +22,15 @@
 
 #include "yaz0/yaz0.h"
 
+enum yaz0_decompress_mode {
+   YAZ0_DECOMPRESS_DONE,
+   YAZ0_DECOMPRESS_ERROR,
+};
+
 struct yaz0_decompress_state {
    struct yaz0_common_state common;
+   enum yaz0_decompress_mode mode;
+   enum yaz0_result error;
 };
 
 #endif //LIBYAZ0_DECOMPRESS_H

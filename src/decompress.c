@@ -38,6 +38,64 @@ yaz0_get_decompress_state(struct yaz0_stream const* stream) {
     return state;
 }
 
+static enum yaz0_step
+decompress_error(struct yaz0_decompress_state* state, enum yaz0_result const code,
+                 enum yaz0_result* result) {
+    state->mode = YAZ0_DECOMPRESS_ERROR;
+    state->error = code;
+    *result = code;
+    return YAZ0_STEP_RETURN;
+}
+
+static enum yaz0_step
+decompress_suspend(enum yaz0_result* result) {
+    *result = YAZ0_OK;
+    return YAZ0_STEP_RETURN;
+}
+
+static enum yaz0_step
+decompress_continue(struct yaz0_decompress_state* state, enum yaz0_decompress_mode const mode,
+                 enum yaz0_result* result) {
+    state->mode = mode;
+    *result = YAZ0_OK;
+    return YAZ0_STEP_CONTINUE;
+}
+
+enum yaz0_result
+yaz0_decompress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
+    struct yaz0_decompress_state* state = yaz0_get_decompress_state(stream);
+    if (state == NULL) {
+        return YAZ0_STREAM_ERROR;
+    }
+
+    size_t const before_in = stream->avail_in;
+    size_t const before_out = stream->avail_out;
+
+    while (true) {
+        enum yaz0_result result = YAZ0_OK;
+        enum yaz0_step step;
+
+        switch (state->mode) {
+            case YAZ0_DECOMPRESS_DONE:
+                return YAZ0_OK;
+
+            case YAZ0_DECOMPRESS_ERROR:
+                return state->error;
+
+            default:
+                return YAZ0_STREAM_ERROR;
+        }
+
+        if (step == YAZ0_STEP_RETURN) {
+            // If we're not moving bytes, we're stalling.
+            if (result == YAZ0_OK && stream->avail_in == before_in && stream->avail_out == before_out) {
+                return YAZ0_BUFFER_ERROR;
+            }
+            return result;
+        }
+    }
+}
+
 enum yaz0_result
 yaz0_decompress_init(struct yaz0_stream* stream) {
     if (stream == NULL) {
@@ -70,6 +128,8 @@ yaz0_decompress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
     if (state == NULL) {
         return YAZ0_STREAM_ERROR;
     }
+    // Set the initial decompressor state.
+    state->mode = YAZ0_DECOMPRESS_DONE;
 
     return YAZ0_OK;
 }
