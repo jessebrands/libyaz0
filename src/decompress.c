@@ -188,7 +188,7 @@ decompress_reference(struct yaz0_decompress_state* state, enum yaz0_flush const 
 }
 
 static enum yaz0_step
-decompress_copy(struct yaz0_decompress_state* state, enum yaz0_flush const flush, enum yaz0_result* result) {
+decompress_copy(struct yaz0_decompress_state* state, enum yaz0_result* result) {
     for (; state->copy_length > 0; state->copy_length--) {
         // Calculate copy position and read the next byte.
         size_t const from = state->history_pos - state->copy_distance;
@@ -245,7 +245,7 @@ yaz0_decompress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
                 break;
 
             case YAZ0_DECOMPRESS_COPY:
-                step = decompress_copy(state, flush, &result);
+                step = decompress_copy(state, &result);
                 break;
 
             case YAZ0_DECOMPRESS_ERROR:
