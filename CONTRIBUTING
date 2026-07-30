@@ -1,0 +1,61 @@
+
+                    libyaz0 -- notes for contributors
+
+Licensing of Contributions
+
+    Submissions are accepted under the GNU Lesser General Public License
+    version 3 or later. New files should include the standard header that is
+    present in every file.
+
+Testing libyaz0
+
+    libyaz0 aims to be a fundamental library upon which larger libraries and
+    applications are built. As such, it is very important that the library is
+    thoroughly tested. Just testing against a suite of synthetic tests is
+    insufficient, which is why it is recommended that you always test against
+    a suite of real world data before making a pull request.
+
+    To help contributors, there's a utility that helps you extract Yaz0 files
+    at test/utils/extract_rom.py. You can invoke this utility against a
+    Nintendo 64 Zelda ROM together with its decompressed version to extract
+    Yaz0 files and their decompressed counterparts.
+
+    Acquire a Nintendo 64 Zelda ROM, and a known good ROM decompressor (like
+    Decompress that is shipped with the Ocarina of Time Randomizer), and then:
+
+        known-good-decompressor path/to/rom.z64 path/to/rom-decompressed.z64
+        python extract_rom.py path/to/rom.z64 \
+            path/to/rom-decompressed.z64      \
+            path/to/test/files
+
+    Then, run CMake to generate a build file like this:
+
+        cmake -DCMAKE_BUILD_TYPE=Debug -S . -B path/to/build-dir \
+            -DYAZ0_TEST_DATA_DIR=path/to/test/files
+        cd path/to/build-dir
+        ctest --output-on-failure
+
+    Be advised that the test suite may take a few minutes. For example, if the
+    test suite runs against an extracted Ocarina of Time 1.0 (US) ROM it will
+    run nearly 3000 combined compression and decompression tests.
+
+    Note: YAZ0_TEST_DATA_DIR is scanned recursively. You can run tests against
+    multiple ROMs by extracting each ROM to a subdirectory.
+
+    Note: We cannot help you acquire a Nintendo 64 Zelda ROM, you will have to
+    acquire one yourself from a cartridge.
+
+Troubleshooting Failed Tests
+
+    One useful quality of extract_rom.py is that the file names for a specific
+    ROM will always be the same for everyone. If you're working on a feature
+    that has tests failing on a specific file from a ROM, you can share the
+    name of the test and its results in an issue on the issue tracker, for
+    example:
+
+        ROM:  Ocarina of Time 1.0 (US)
+        Test: CompressFile.OOT_1_O_US.042D
+
+        <Results of the Test>
+
+    This will allow other developers to reproduce the results.
