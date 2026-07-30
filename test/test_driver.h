@@ -39,6 +39,9 @@ struct run_result {
 struct run_result
 run_compress(uint8_t const* data, size_t size, int level);
 
+struct run_result
+run_decompress_chunked(uint8_t const* data, size_t size, size_t in_chunk, size_t out_chunk);
+
 /*
    Decompresses data.
 */

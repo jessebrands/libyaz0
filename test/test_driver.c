@@ -75,7 +75,8 @@ cleanup_stream:
     return run;
 }
 
-struct run_result run_decompress(uint8_t const* data, size_t size) {
+struct run_result run_decompress_chunked(uint8_t const* data, size_t const size,
+                                         size_t const in_chunk, size_t const out_chunk) {
     struct run_result run = {0};
 
     struct yaz0_header header = {0};
@@ -107,17 +108,43 @@ struct run_result run_decompress(uint8_t const* data, size_t size) {
     }
 
     stream.next_in = data;
-    stream.avail_in = size;
     stream.next_out = run.out;
-    stream.avail_out = out_size;
 
-    run.result = yaz0_decompress(&stream, YAZ0_FINISH);
+    size_t const max_iterations = size + out_size + 64;
+
+    for (size_t i = 0; i < max_iterations; ++i) {
+        size_t const give = stream.total_in + in_chunk > size
+                                ? size - stream.total_in
+                                : in_chunk;
+
+        size_t const want = stream.total_out + out_chunk > out_size
+                                ? out_size - stream.total_out
+                                : out_chunk;
+
+        stream.avail_in = give;
+        stream.avail_out = want;
+
+        enum yaz0_flush const flush = stream.total_in + give >= size
+                                          ? YAZ0_FINISH
+                                          : YAZ0_NO_FLUSH;
+
+        run.result = yaz0_decompress(&stream, flush);
+
+        if (run.result != YAZ0_OK) {
+            break;
+        }
+    }
+
     run.total_in = stream.total_in;
     run.total_out = stream.total_out;
 
 cleanup_stream:
     yaz0_decompress_end(&stream);
     return run;
+}
+
+struct run_result run_decompress(uint8_t const* data, size_t const size) {
+    return run_decompress_chunked(data, size, 7, 5);
 }
 
 bool
