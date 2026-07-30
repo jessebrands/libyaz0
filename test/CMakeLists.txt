@@ -14,13 +14,23 @@ target_link_libraries(test_compress PRIVATE yaz0test)
 add_executable(test_decompress test_decompress.c)
 target_link_libraries(test_decompress PRIVATE yaz0test)
 
-function(yaz0_add_test name compressed_file decompressed_file)
-    add_test(NAME "CompressFile.${name}"
+function(yaz0_add_file_test name compressed_file decompressed_file)
+    add_test(NAME "Compress.${name}"
             COMMAND test_compress "${decompressed_file}" "${compressed_file}")
 
-    add_test(NAME "DecompressFile.${name}"
+    add_test(NAME "Decompress.${name}"
             COMMAND test_decompress "${compressed_file}" "${decompressed_file}")
 endfunction()
+
+function(yaz0_add_test_case name case)
+    yaz0_add_file_test("${name}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/${case}.szs"
+            "${CMAKE_CURRENT_SOURCE_DIR}/${case}.bin")
+endfunction()
+
+yaz0_add_test_case("HeaderOnly" "cases/header_only")
+yaz0_add_test_case("SingleLiteralGroup" "cases/single_literal_group")
+yaz0_add_test_case("ABCRepeat" "cases/abc_repeat")
 
 if (YAZ0_TEST_DATA_DIR)
     if (NOT IS_DIRECTORY "${YAZ0_TEST_DATA_DIR}")
@@ -39,7 +49,7 @@ if (YAZ0_TEST_DATA_DIR)
         string(REPLACE " " "_" TEST_NAME "${TEST_NAME}")
 
         if (EXISTS "${YAZ0_TEST_DATA_DIR}/${TEST_BASE}.bin")
-            yaz0_add_test("${TEST_NAME}"
+            yaz0_add_file_test("File.${TEST_NAME}"
                     "${YAZ0_TEST_DATA_DIR}/${TEST_BASE}.szs"
                     "${YAZ0_TEST_DATA_DIR}/${TEST_BASE}.bin")
         else ()
