@@ -22,4 +22,8 @@
 
 #include "yaz0/yaz0.h"
 
+struct yaz0_compress_state {
+   struct yaz0_common_state common;
+};
+
 #endif //LIBYAZ0_COMPRESS_H

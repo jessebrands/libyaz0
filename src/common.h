@@ -24,8 +24,14 @@
 
 #include "yaz0/yaz0.h"
 
+enum yaz0_kind {
+    YAZ0_KIND_COMPRESSOR = 1,
+    YAZ0_KIND_DECOMPRESSOR = 2,
+};
+
 struct yaz0_common_state {
     struct yaz0_stream* stream;
+    enum yaz0_kind kind;
 
     void* opaque;
     yaz0_alloc_func alloc;
