@@ -20,6 +20,7 @@
 #ifndef LIBYAZ0_COMPRESS_H
 #define LIBYAZ0_COMPRESS_H
 
+#include "common.h"
 #include "yaz0/yaz0.h"
 
 struct yaz0_compress_state {

@@ -20,6 +20,7 @@
 #ifndef LIBYAZ0_DECOMPRESS_H
 #define LIBYAZ0_DECOMPRESS_H
 
+#include "common.h"
 #include "yaz0/yaz0.h"
 
 enum yaz0_decompress_mode {

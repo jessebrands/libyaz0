@@ -20,7 +20,6 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#include "common.h"
 #include "decompress.h"
 #include "stream.h"
 

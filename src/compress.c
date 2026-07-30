@@ -19,7 +19,6 @@
 
 #include <assert.h>
 
-#include "common.h"
 #include "compress.h"
 
 static struct yaz0_compress_state*
