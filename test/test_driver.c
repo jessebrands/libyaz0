@@ -135,11 +135,13 @@ assert_run(struct run_result run, size_t const expected_in, uint8_t const* expec
         return false;
     }
 
-    if (run.total_in != expected_in) {
+    // Files extracted from Nintendo 64 ROMs are padded to a multiple of 16
+    // bytes. Besides, we really only care that we don't exceed expected_in.
+    if (run.total_in > expected_in) {
         fprintf(
             stderr,
-            "FAILED: Expected run.total_in = %zu\n"
-            "          Actual run.total_in = %zu\n",
+            "FAILED: Expected run.total_in <= %zu\n"
+            "          Actual run.total_in  = %zu\n",
             expected_in,
             run.total_in
         );
