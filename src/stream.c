@@ -22,12 +22,6 @@
 
 #include "stream.h"
 
-bool yaz0_stream_valid(struct yaz0_stream const* stream) {
-    return stream != NULL &&
-           !((stream->avail_in != 0 && stream->next_in == NULL) ||
-             (stream->avail_out != 0 && stream->next_out == NULL));
-}
-
 size_t yaz0_stream_read(struct yaz0_stream* stream, uint8_t* dest, size_t const length) {
     assert(dest != NULL);
 

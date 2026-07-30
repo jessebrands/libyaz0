@@ -42,8 +42,6 @@ static inline bool yaz0_stream_write_available(struct yaz0_stream const* stream)
     return stream->avail_out > 0;
 }
 
-bool yaz0_stream_valid(struct yaz0_stream const* stream);
-
 size_t yaz0_stream_read(struct yaz0_stream* stream, uint8_t* dest, size_t length);
 
 size_t yaz0_stream_write(struct yaz0_stream* stream, uint8_t const* src, size_t length);
