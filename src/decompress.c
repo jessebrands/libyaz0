@@ -184,7 +184,29 @@ decompress_reference(struct yaz0_decompress_state* state, enum yaz0_flush const 
 
     state->copy_distance = distance;
     state->copy_length = length;
-    return decompress_continue(state, YAZ0_DECOMPRESS_DONE, result);
+    return decompress_continue(state, YAZ0_DECOMPRESS_COPY, result);
+}
+
+static enum yaz0_step
+decompress_copy(struct yaz0_decompress_state* state, enum yaz0_flush const flush, enum yaz0_result* result) {
+    for (; state->copy_length > 0; state->copy_length--) {
+        // Calculate copy position and read the next byte.
+        size_t const from = state->history_pos - state->copy_distance;
+        size_t const read_position = from & (YAZ0_MAX_DISTANCE - 1);
+        uint8_t const b = state->history[read_position];
+
+        if (!YAZ0_IO_SUCCESS(yaz0_stream_write_byte(state->common.stream, b))) {
+            return decompress_suspend(result);
+        }
+
+        size_t const write_position = state->history_pos & (YAZ0_MAX_DISTANCE - 1);
+        state->history[write_position] = b;
+        state->history_pos++;
+        state->remaining--;
+    }
+
+    // The run has been fully copied, return to the TOKEN phase.
+    return decompress_continue(state, YAZ0_DECOMPRESS_TOKEN, result);
 }
 
 enum yaz0_result
@@ -220,6 +242,10 @@ yaz0_decompress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
 
             case YAZ0_DECOMPRESS_REFERENCE:
                 step = decompress_reference(state, flush, &result);
+                break;
+
+            case YAZ0_DECOMPRESS_COPY:
+                step = decompress_copy(state, flush, &result);
                 break;
 
             case YAZ0_DECOMPRESS_ERROR:
