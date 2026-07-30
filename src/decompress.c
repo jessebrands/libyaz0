@@ -121,10 +121,11 @@ decompress_token(struct yaz0_decompress_state* state, enum yaz0_result* result) 
     bool const literal = state->group_bitmask & 0x80;
     state->group_bitmask <<= 1;
     state->group_remaining--;
+    state->reference_pos = 0;
 
     enum yaz0_decompress_mode const next_mode = literal
                                               ? YAZ0_DECOMPRESS_LITERAL
-                                              : YAZ0_DECOMPRESS_DONE;
+                                              : YAZ0_DECOMPRESS_REFERENCE;
 
     return decompress_continue(state, next_mode, result);
 }
@@ -147,6 +148,43 @@ decompress_literal(struct yaz0_decompress_state* state, enum yaz0_flush const fl
     state->remaining--;
 
     return decompress_continue(state, YAZ0_DECOMPRESS_TOKEN, result);
+}
+
+static enum yaz0_step
+decompress_reference(struct yaz0_decompress_state* state, enum yaz0_flush const flush, enum yaz0_result* result) {
+    uint8_t b = 0;
+    if (!YAZ0_IO_SUCCESS(yaz0_stream_read_byte(state->common.stream, &b))) {
+        if (flush == YAZ0_FINISH) {
+            return decompress_error(state, YAZ0_TRUNCATED, result);
+        }
+
+        return decompress_suspend(result);
+    }
+
+    state->reference[state->reference_pos++] = b;
+
+    if (state->reference_pos < 2) {
+        return decompress_continue(state, YAZ0_DECOMPRESS_REFERENCE, result);
+    }
+    if ((state->reference[0] >> 4) == 0 && state->reference_pos < 3) {
+        return decompress_continue(state, YAZ0_DECOMPRESS_REFERENCE, result);
+    }
+
+    size_t const distance = ((state->reference[0] & 0xF) << 8 | state->reference[1]) + YAZ0_DISTANCE_BIAS;
+    size_t const length = (state->reference[0] >> 4) != 0
+                              ? (state->reference[0] >> 4) + YAZ0_SHORT_LENGTH_BIAS
+                              : state->reference[2] + YAZ0_LONG_LENGTH_BIAS;
+
+    if (distance > state->history_pos) {
+        return decompress_error(state, YAZ0_DATA_ERROR, result);
+    }
+    if (length > state->remaining) {
+        return decompress_error(state, YAZ0_DATA_ERROR, result);
+    }
+
+    state->copy_distance = distance;
+    state->copy_length = length;
+    return decompress_continue(state, YAZ0_DECOMPRESS_DONE, result);
 }
 
 enum yaz0_result
@@ -178,6 +216,10 @@ yaz0_decompress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
 
             case YAZ0_DECOMPRESS_LITERAL:
                 step = decompress_literal(state, flush, &result);
+                break;
+
+            case YAZ0_DECOMPRESS_REFERENCE:
+                step = decompress_reference(state, flush, &result);
                 break;
 
             case YAZ0_DECOMPRESS_ERROR:

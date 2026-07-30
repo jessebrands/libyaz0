@@ -27,6 +27,7 @@ enum yaz0_decompress_mode {
    YAZ0_DECOMPRESS_START_BLOCK,
    YAZ0_DECOMPRESS_TOKEN,
    YAZ0_DECOMPRESS_LITERAL,
+   YAZ0_DECOMPRESS_REFERENCE,
    YAZ0_DECOMPRESS_ERROR,
    YAZ0_DECOMPRESS_DONE,
 };
@@ -44,6 +45,12 @@ struct yaz0_decompress_state {
 
    uint8_t group_bitmask;
    unsigned group_remaining;
+
+   uint8_t reference[3];
+   size_t reference_pos;
+
+   size_t copy_distance;
+   size_t copy_length;
 };
 
 #endif //LIBYAZ0_DECOMPRESS_H
