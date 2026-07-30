@@ -46,7 +46,7 @@ yaz0_alloc(struct yaz0_stream const* stream, size_t const size) {
 
     struct yaz0_common_state const* state = yaz0_get_common_state(stream);
     if (state != NULL && state->alloc != NULL) {
-        return state->alloc(stream->opaque, size);
+        return state->alloc(state->opaque, size);
     }
 
     return malloc(size);
@@ -66,7 +66,7 @@ yaz0_free(struct yaz0_stream const* stream, void* ptr) {
 
     struct yaz0_common_state const* state = yaz0_get_common_state(stream);
     if (state != NULL && state->alloc != NULL) {
-        return state->free(stream->opaque, ptr);
+        return state->free(state->opaque, ptr);
     }
 
     return free(ptr);
