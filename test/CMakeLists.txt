@@ -28,9 +28,9 @@ function(yaz0_add_test_case name case)
             "${CMAKE_CURRENT_SOURCE_DIR}/${case}.bin")
 endfunction()
 
-yaz0_add_test_case("HeaderOnly" "cases/header_only")
-yaz0_add_test_case("SingleLiteralGroup" "cases/single_literal_group")
-yaz0_add_test_case("ABCRepeat" "cases/abc_repeat")
+yaz0_add_test_case("Synthetic.HeaderOnly" "cases/header_only")
+yaz0_add_test_case("Synthetic.SingleLiteralGroup" "cases/single_literal_group")
+yaz0_add_test_case("Synthetic.ABCRepeat" "cases/abc_repeat")
 
 if (YAZ0_TEST_DATA_DIR)
     if (NOT IS_DIRECTORY "${YAZ0_TEST_DATA_DIR}")
