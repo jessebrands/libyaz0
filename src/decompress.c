@@ -57,7 +57,7 @@ decompress_suspend(enum yaz0_result* result) {
 
 static enum yaz0_step
 decompress_continue(struct yaz0_decompress_state* state, enum yaz0_decompress_mode const mode,
-                 enum yaz0_result* result) {
+                    enum yaz0_result* result) {
     state->mode = mode;
     *result = YAZ0_OK;
     return YAZ0_STEP_CONTINUE;
@@ -152,11 +152,11 @@ yaz0_decompress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
                 step = decompress_token(state, &result);
                 break;
 
-            case YAZ0_DECOMPRESS_DONE:
-                return YAZ0_OK;
-
             case YAZ0_DECOMPRESS_ERROR:
                 return state->error;
+
+            case YAZ0_DECOMPRESS_DONE:
+                return YAZ0_OK;
 
             default:
                 return YAZ0_STREAM_ERROR;

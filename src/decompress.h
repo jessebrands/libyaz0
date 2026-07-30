@@ -24,10 +24,10 @@
 
 enum yaz0_decompress_mode {
    YAZ0_DECOMPRESS_HEADER,
-   YAZ0_DECOMPRESS_DONE,
    YAZ0_DECOMPRESS_START_BLOCK,
    YAZ0_DECOMPRESS_TOKEN,
    YAZ0_DECOMPRESS_ERROR,
+   YAZ0_DECOMPRESS_DONE,
 };
 
 struct yaz0_decompress_state {
