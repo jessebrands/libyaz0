@@ -72,3 +72,38 @@ cleanup_stream:
     yaz0_compress_end(&stream);
     return run;
 }
+
+struct run_result run_decompress(uint8_t const* data, size_t size) {
+    struct run_result run = {0};
+
+    struct yaz0_stream stream = {0};
+    run.result = yaz0_decompress_init(&stream);
+    if (run.result != YAZ0_OK) {
+        fprintf(stderr, "FAILED: Could not initialize compressor\n");
+        return run;
+    }
+
+    // TODO: There are better ways to do this, but the output can never
+    //       be smaller than the input, so this is ok.
+    size_t const out_size = size;
+
+    run.out = malloc(out_size);
+    if (run.out == NULL) {
+        fprintf(stderr, "ERROR:  Failed to allocate output buffer\n");
+        run.result = YAZ0_MEMORY_ERROR;
+        goto cleanup_stream;
+    }
+
+    stream.next_in = data;
+    stream.avail_in = size;
+    stream.next_out = run.out;
+    stream.avail_out = out_size;
+
+    run.result = yaz0_decompress(&stream, YAZ0_FINISH);
+    run.total_in = stream.total_in;
+    run.total_out = stream.total_out;
+
+cleanup_stream:
+    yaz0_decompress_end(&stream);
+    return run;
+}

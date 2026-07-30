@@ -38,4 +38,10 @@ struct run_result {
 struct run_result
 run_compress(uint8_t const* data, size_t size, int level);
 
+/*
+   Decompresses data.
+*/
+struct run_result
+run_decompress(uint8_t const* data, size_t size);
+
 #endif //LIBYAZ0_TEST_DRIVER_H
