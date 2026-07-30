@@ -294,6 +294,12 @@ yaz0_decompress_init(struct yaz0_stream* stream) {
     // Set the initial decompressor state.
     state->mode = YAZ0_DECOMPRESS_HEADER;
     state->history_pos = 0;
+    state->remaining = 0;
+    state->group_bitmask = 0;
+    state->group_remaining = 0;
+    state->reference_pos = 0;
+    state->copy_distance = 0;
+    state->copy_length = 0;
 
     return YAZ0_OK;
 }
