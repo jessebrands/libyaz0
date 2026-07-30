@@ -1,0 +1,6 @@
+* text=auto
+*.c text eol=lf
+*.h text eol=lf
+*.py text eol=lf
+*.szs binary
+*.bin binary
