@@ -18,9 +18,11 @@
 */
 
 #include <assert.h>
+#include <stdbool.h>
 
 #include "common.h"
 #include "decompress.h"
+#include "stream.h"
 
 static struct yaz0_decompress_state*
 yaz0_get_decompress_state(struct yaz0_stream const* stream) {
@@ -61,6 +63,37 @@ decompress_continue(struct yaz0_decompress_state* state, enum yaz0_decompress_mo
     return YAZ0_STEP_CONTINUE;
 }
 
+enum yaz0_step
+decompress_header(struct yaz0_decompress_state* state, enum yaz0_flush const flush, enum yaz0_result* result) {
+    size_t const want = 16 - state->history_pos;
+    uint8_t* header_buf = &state->history[state->history_pos];
+    state->history_pos += yaz0_stream_read(state->common.stream, header_buf, want);
+
+    bool const complete = state->history_pos == 16;
+    if (!complete) {
+        if (flush == YAZ0_FINISH) {
+            return decompress_error(state, YAZ0_TRUNCATED, result);
+        }
+
+        return decompress_suspend(result);
+    }
+
+    enum yaz0_result const parse_result = yaz0_read_header(state->history, 16, &state->header);
+    if (parse_result != YAZ0_OK) {
+        return decompress_error(state, parse_result, result);
+    }
+
+    state->history_pos = 0;
+    state->remaining = state->header.uncompressed_size;
+
+    // An empty file is a valid file.
+    if (state->remaining == 0) {
+        return decompress_continue(state, YAZ0_DECOMPRESS_DONE, result);
+    }
+
+    return decompress_continue(state, YAZ0_DECOMPRESS_DONE, result);
+}
+
 enum yaz0_result
 yaz0_decompress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
     struct yaz0_decompress_state* state = yaz0_get_decompress_state(stream);
@@ -76,6 +109,10 @@ yaz0_decompress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
         enum yaz0_step step;
 
         switch (state->mode) {
+            case YAZ0_DECOMPRESS_HEADER:
+                step = decompress_header(state, flush, &result);
+                break;
+
             case YAZ0_DECOMPRESS_DONE:
                 return YAZ0_OK;
 
@@ -119,17 +156,9 @@ yaz0_decompress_init(struct yaz0_stream* stream) {
     state->common.alloc = stream->alloc;
     state->common.free = stream->free;
 
-    return YAZ0_OK;
-}
-
-enum yaz0_result
-yaz0_decompress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
-    struct yaz0_decompress_state const* state = yaz0_get_decompress_state(stream);
-    if (state == NULL) {
-        return YAZ0_STREAM_ERROR;
-    }
     // Set the initial decompressor state.
-    state->mode = YAZ0_DECOMPRESS_DONE;
+    state->mode = YAZ0_DECOMPRESS_HEADER;
+    state->history_pos = 0;
 
     return YAZ0_OK;
 }

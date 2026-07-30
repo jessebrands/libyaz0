@@ -39,6 +39,7 @@ enum yaz0_result {
     YAZ0_DATA_ERROR = -3,
     YAZ0_MEMORY_ERROR = -4,
     YAZ0_BUFFER_ERROR = -5,
+    YAZ0_TRUNCATED = -6,
     YAZ0_BAD_HEADER = -7,
 };
 

@@ -23,6 +23,7 @@
 #include "yaz0/yaz0.h"
 
 enum yaz0_decompress_mode {
+   YAZ0_DECOMPRESS_HEADER,
    YAZ0_DECOMPRESS_DONE,
    YAZ0_DECOMPRESS_ERROR,
 };
@@ -31,6 +32,12 @@ struct yaz0_decompress_state {
    struct yaz0_common_state common;
    enum yaz0_decompress_mode mode;
    enum yaz0_result error;
+
+   struct yaz0_header header;
+
+   uint8_t history[YAZ0_MAX_DISTANCE];
+   size_t history_pos;
+   size_t remaining;
 };
 
 #endif //LIBYAZ0_DECOMPRESS_H
