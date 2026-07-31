@@ -1,19 +1,16 @@
 set(YAZ0_TEST_DATA_DIR "" CACHE PATH
         "Directory of extracted Yaz0 test data (scanned recursively)")
 
-add_library(yaz0test STATIC)
-target_link_libraries(yaz0test PUBLIC yaz0-static)
-target_sources(yaz0test PRIVATE
-        test_driver.c
-        test_utility.c)
-
+add_library(yaz0test STATIC test_driver.c test_utility.c)
+add_library(yaz0::yaz0test ALIAS yaz0test)
+target_link_libraries(yaz0test PUBLIC yaz0::yaz0_static)
 set_target_properties(yaz0test PROPERTIES DEBUG_POSTFIX "d")
 
 add_executable(test_compress test_compress.c)
-target_link_libraries(test_compress PRIVATE yaz0test)
+target_link_libraries(test_compress PRIVATE yaz0::yaz0test)
 
 add_executable(test_decompress test_decompress.c)
-target_link_libraries(test_decompress PRIVATE yaz0test)
+target_link_libraries(test_decompress PRIVATE yaz0::yaz0test)
 
 if (MSVC)
     target_compile_options(yaz0test PRIVATE /W4)

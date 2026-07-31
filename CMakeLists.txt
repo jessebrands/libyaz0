@@ -9,7 +9,19 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-option(YAZ0_TESTS "Enable testing and build testing suite" ON)
+option(YAZ0_BUILD_SHARED "Enable building libyaz0 as shared library" ON)
+option(YAZ0_BUILD_STATIC "Enable building libyaz0 as static library" ON)
+option(YAZ0_BUILD_TESTS "Enable building the testing suite" ${PROJECT_IS_TOP_LEVEL})
+
+set(YAZ0_PUBLIC_HEADERS
+        include/yaz0/yaz0.h)
+
+set(YAZ0_PRIVATE_HEADERS
+        src/common.h
+        src/compress.h
+        src/decompress.h
+        src/search.h
+        src/stream.h)
 
 set(YAZ0_SOURCES
         src/yaz0.c
@@ -19,37 +31,62 @@ set(YAZ0_SOURCES
         src/search.c
         src/stream.c)
 
-add_library(yaz0 SHARED)
-target_sources(yaz0 PRIVATE ${YAZ0_SOURCES})
+if (YAZ0_BUILD_SHARED)
+    add_library(yaz0 SHARED
+            ${YAZ0_SOURCES}
+            ${YAZ0_PUBLIC_HEADERS}
+            ${YAZ0_PRIVATE_HEADERS})
 
-target_include_directories(yaz0
-        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
-        PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    add_library(yaz0::yaz0 ALIAS yaz0)
 
-set_target_properties(yaz0 PROPERTIES
-        OUTPUT_NAME "yaz0"
-        DEBUG_POSTFIX "d")
+    target_include_directories(yaz0
+            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-add_library(yaz0-static STATIC)
-target_sources(yaz0-static PRIVATE ${YAZ0_SOURCES})
+    set_target_properties(yaz0 PROPERTIES
+            OUTPUT_NAME "yaz0"
+            DEBUG_POSTFIX "d"
+            VERSION ${PROJECT_VERSION}
+            SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
-if (MSVC)
-    target_compile_options(yaz0 PRIVATE /W4)
-    target_compile_options(yaz0-static PRIVATE /W4)
-else ()
-    target_compile_options(yaz0 PRIVATE -Wall -Wextra -Wconversion)
-    target_compile_options(yaz0-static PRIVATE -Wall -Wextra -Wconversion)
+    target_compile_definitions(yaz0 PRIVATE YAZ0_SHARED)
+    set_target_properties(yaz0 PROPERTIES C_VISIBILITY_PRESET hidden)
+    target_compile_features(yaz0 PUBLIC c_std_99)
+
+    if (MSVC)
+        target_compile_options(yaz0 PRIVATE /W4)
+    else ()
+        target_compile_options(yaz0 PRIVATE -Wall -Wextra -Wconversion)
+    endif ()
 endif ()
 
-target_include_directories(yaz0-static
-        PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
-        PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+if (YAZ0_BUILD_STATIC OR YAZ0_BUILD_TESTS)
+    add_library(yaz0_static STATIC
+            ${YAZ0_SOURCES}
+            ${YAZ0_PUBLIC_HEADERS}
+            ${YAZ0_PRIVATE_HEADERS})
 
-set_target_properties(yaz0-static PROPERTIES
-        OUTPUT_NAME "yaz0"
-        DEBUG_POSTFIX "d")
+    add_library(yaz0::yaz0_static ALIAS yaz0_static)
 
-if (YAZ0_TESTS)
+    target_include_directories(yaz0_static
+            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+    set_target_properties(yaz0_static PROPERTIES
+            OUTPUT_NAME "yaz0s"
+            DEBUG_POSTFIX "d")
+
+    target_compile_definitions(yaz0_static PUBLIC YAZ0_STATIC)
+    target_compile_features(yaz0_static PUBLIC c_std_99)
+
+    if (MSVC)
+        target_compile_options(yaz0_static PRIVATE /W4)
+    else ()
+        target_compile_options(yaz0_static PRIVATE -Wall -Wextra -Wconversion)
+    endif ()
+endif ()
+
+if (YAZ0_BUILD_TESTS)
     enable_testing()
     add_subdirectory("test")
 endif ()
