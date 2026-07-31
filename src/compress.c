@@ -153,7 +153,7 @@ compress_search(struct yaz0_compress_state* state, size_t const position,
     *match_distance = 0;
     *match_length = 1;
 
-    assert(position >= state->window_size);
+    assert(position < state->window_size);
     size_t lookahead = state->window_size - position;
     if (lookahead > YAZ0_MAX_MATCH) {
         lookahead = YAZ0_MAX_MATCH;
