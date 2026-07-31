@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  source-tarball:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -B build -S .
+
+      - name: Build source package
+        run: cpack --config build/CPackSourceConfig.cmake -B dist
+
+      - name: Verify the tarball matches the release tag
+        shell: bash
+        run: |
+          expected="libyaz0-${GITHUB_REF_NAME#v}.tar.gz"
+          if [ ! -f "dist/$expected" ]; then
+            echo "Expected dist/$expected, but CPack produced:"
+            ls -1 dist/*.tar.gz
+            echo "The release tag and project(VERSION) in CMakeLists.txt disagree."
+            exit 1
+          fi
+
+      - name: Generate checksum
+        working-directory: dist
+        run: sha256sum libyaz0-*.tar.gz > SHA256SUMS
+
+      - name: Attach to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" dist/libyaz0-*.tar.gz dist/SHA256SUMS --clobber
