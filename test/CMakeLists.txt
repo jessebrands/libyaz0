@@ -1,7 +1,7 @@
 set(YAZ0_TEST_DATA_DIR "" CACHE PATH
         "Directory of extracted Yaz0 test data (scanned recursively)")
 
-add_library(yaz0test STATIC test_driver.c test_utility.c)
+add_library(yaz0test STATIC test_driver.c test_utility.c test_corpus.c)
 add_library(yaz0::yaz0test ALIAS yaz0test)
 target_link_libraries(yaz0test PUBLIC yaz0::yaz0_static)
 set_target_properties(yaz0test PROPERTIES DEBUG_POSTFIX "d")
