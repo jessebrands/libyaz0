@@ -136,4 +136,28 @@ if (YAZ0_INSTALL AND YAZ0_INSTALL_TARGETS)
 
     install(FILES COPYING COPYING.LESSER
             DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/licenses/libyaz0")
+
+    if (PROJECT_IS_TOP_LEVEL)
+        set(CPACK_PACKAGE_NAME "libyaz0")
+        set(CPACK_PACKAGE_VENDOR "Jesse Gerard Brands")
+        set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
+        set(CPACK_PACKAGE_HOMEPAGE_URL "${PROJECT_HOMEPAGE_URL}")
+        set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER")
+        set(CPACK_VERBATIM_VARIABLES ON)
+
+        set(CPACK_GENERATOR "TGZ;ZIP")
+
+        set(CPACK_SOURCE_GENERATOR "TGZ")
+        set(CPACK_SOURCE_PACKAGE_FILE_NAME "libyaz0-${PROJECT_VERSION}")
+        set(CPACK_SOURCE_IGNORE_FILES
+                "/\\.git"
+                "/\\.idea/"
+                "/cmake-build-[^/]*/"
+                "/build[^/]*/"
+                "/install/"
+                "/__pycache__/"
+                "\\.pyc$")
+
+        include(CPack)
+    endif ()
 endif ()

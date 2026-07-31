@@ -35,7 +35,7 @@ Compiling
 
     Download the latest source tarball, and then:
 
-        tar -xvf libyaz0-x.y.tar.gz
+        tar -xvf libyaz0-x.y.z.tar.gz
         cmake -DCMAKE_BUILD_TYPE=Release -S ./libyaz0-x.y -B /path/to/build-dir
         cmake --build /path/to/build-dir
         cmake --install /path/to/build-dir --prefix /path/to/install-dir
