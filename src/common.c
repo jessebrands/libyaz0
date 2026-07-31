@@ -61,13 +61,15 @@ yaz0_free(struct yaz0_stream const* stream, void* ptr) {
     }
 
     if (stream->state == NULL && stream->free != NULL) {
-        return stream->free(stream->opaque, ptr);
+        stream->free(stream->opaque, ptr);
+        return;
     }
 
     struct yaz0_common_state const* state = yaz0_get_common_state(stream);
     if (state != NULL && state->free != NULL) {
-        return state->free(state->opaque, ptr);
+        state->free(state->opaque, ptr);
+        return;
     }
 
-    return free(ptr);
+    free(ptr);
 }
