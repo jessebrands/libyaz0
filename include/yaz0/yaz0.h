@@ -23,6 +23,20 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#if defined _WIN32 || defined __CYGWIN__
+#  if defined YAZ0_STATIC
+#    define YAZ0_API
+#  elif defined YAZ0_SHARED
+#    define YAZ0_API __declspec(dllexport)
+#  else
+#    define YAZ0_API __declspec(dllimport)
+#  endif
+#elif defined __GNUC__ && !defined YAZ0_STATIC
+#  define YAZ0_API __attribute__((visibility("default")))
+#else
+#  define YAZ0_API
+#endif
+
 #if defined __cplusplus
 extern "C" {
 #endif
@@ -78,32 +92,32 @@ struct yaz0_stream {
     void* state;
 };
 
-enum yaz0_result
+YAZ0_API enum yaz0_result
 yaz0_compress_init(struct yaz0_stream* stream, int level,
                    uint32_t uncompressed_size);
 
-enum yaz0_result
+YAZ0_API enum yaz0_result
 yaz0_compress(struct yaz0_stream* stream, enum yaz0_flush flush);
 
-void
+YAZ0_API void
 yaz0_compress_end(struct yaz0_stream* stream);
 
-enum yaz0_result
+YAZ0_API enum yaz0_result
 yaz0_decompress_init(struct yaz0_stream* stream);
 
-enum yaz0_result
+YAZ0_API enum yaz0_result
 yaz0_decompress(struct yaz0_stream* stream, enum yaz0_flush flush);
 
-void
+YAZ0_API void
 yaz0_decompress_end(struct yaz0_stream* stream);
 
-enum yaz0_result
+YAZ0_API enum yaz0_result
 yaz0_read_header(uint8_t const* data, size_t size, struct yaz0_header* header);
 
-enum yaz0_result
+YAZ0_API enum yaz0_result
 yaz0_write_header(struct yaz0_header const* header, uint8_t* dst, size_t size);
 
-char const*
+YAZ0_API char const*
 yaz0_result_name(enum yaz0_result result);
 
 #if defined __cplusplus
