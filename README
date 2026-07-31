@@ -40,5 +40,5 @@ Compiling
         cmake --build /path/to/build-dir
         cmake --install /path/to/build-dir --prefix /path/to/install-dir
 
-    You will need CMake 3.20 or later, as well as a C compiler that supports
+    You will need CMake 3.21 or later, as well as a C compiler that supports
     the C99 standard.
