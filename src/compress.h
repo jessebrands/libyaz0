@@ -23,8 +23,15 @@
 #include "common.h"
 #include "yaz0/yaz0.h"
 
+enum yaz0_compress_mode {
+   YAZ0_COMPRESS_ERROR,
+   YAZ0_COMPRESS_DONE,
+};
+
 struct yaz0_compress_state {
    struct yaz0_common_state common;
+   enum yaz0_compress_mode mode;
+   enum yaz0_result error;
 };
 
 #endif //LIBYAZ0_COMPRESS_H
