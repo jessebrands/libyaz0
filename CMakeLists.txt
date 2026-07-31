@@ -32,6 +32,14 @@ set_target_properties(yaz0 PROPERTIES
 add_library(yaz0-static STATIC)
 target_sources(yaz0-static PRIVATE ${YAZ0_SOURCES})
 
+if (MSVC)
+    target_compile_options(yaz0 PRIVATE /W4)
+    target_compile_options(yaz0-static PRIVATE /W4)
+else ()
+    target_compile_options(yaz0 PRIVATE -Wall -Wextra -Wconversion)
+    target_compile_options(yaz0-static PRIVATE -Wall -Wextra -Wconversion)
+endif ()
+
 target_include_directories(yaz0-static
         PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
         PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")

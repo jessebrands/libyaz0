@@ -15,6 +15,16 @@ target_link_libraries(test_compress PRIVATE yaz0test)
 add_executable(test_decompress test_decompress.c)
 target_link_libraries(test_decompress PRIVATE yaz0test)
 
+if (MSVC)
+    target_compile_options(yaz0test PRIVATE /W4)
+    target_compile_options(test_compress PRIVATE /W4)
+    target_compile_options(test_decompress PRIVATE /W4)
+else ()
+    target_compile_options(yaz0test PRIVATE -Wall -Wextra -Wconversion)
+    target_compile_options(test_compress PRIVATE -Wall -Wextra -Wconversion)
+    target_compile_options(test_decompress PRIVATE -Wall -Wextra -Wconversion)
+endif ()
+
 function(yaz0_add_test YAZ0_TEST_NAME)
     cmake_parse_arguments(ARG "" "COMPRESSED_FILE;DECOMPRESSED_FILE;PADDING;IN_CHUNK;OUT_CHUNK" "" ${ARGN})
 
