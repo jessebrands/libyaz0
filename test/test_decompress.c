@@ -27,11 +27,12 @@ usage(void) {
     fprintf(
         stderr,
         "usage: test_decompress"
-        " [-i bytes] [-o bytes] [-r code] file expected_file\n"
+        " [-i bytes] [-o bytes] [-r code] [-p bytes] file expected_file\n"
 
         "  -i bytes  input chunk size\n"
         "  -o bytes  output chunk size\n"
         "  -r code   expected result code \n"
+        "  -p bytes  allowed alignment padding on input size\n"
     );
 
     return EXIT_FAILURE;
@@ -52,7 +53,7 @@ int main(int argc, char** argv) {
 
     bool passed = assert_run(run, fixture.test.expected_result);
 
-    if (!assert_total_in(run, fixture.test.size, 16)) {
+    if (!assert_total_in(run, fixture.test.size, fixture.input_padding)) {
         passed = false;
     }
     if (!assert_total_out(run, fixture.test.expected_size, 0)) {

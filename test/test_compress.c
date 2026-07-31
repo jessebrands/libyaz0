@@ -27,12 +27,13 @@ usage(void) {
     fprintf(
         stderr,
         "usage: test_compress"
-        " [-l level] [-i bytes] [-o bytes] [-r code] file expected_file\n"
+        " [-l level] [-i bytes] [-o bytes] [-r code] [-p bytes] file expected_file\n"
 
         "  -l level  compression level\n"
         "  -i bytes  input chunk size\n"
         "  -o bytes  output chunk size\n"
         "  -r code   expected result code \n"
+        "  -p bytes  allowed alignment padding on output size\n"
     );
 
     return EXIT_FAILURE;
@@ -55,7 +56,7 @@ int main(int argc, char** argv) {
     if (!assert_total_in(run, fixture.test.size, 0)) {
         passed = false;
     }
-    if (!assert_total_out(run, fixture.test.expected_size, 16)) {
+    if (!assert_total_out(run, fixture.test.expected_size, fixture.output_padding)) {
         passed = false;
     }
     if (!assert_out(run, fixture.test.expected, fixture.test.expected_size)) {

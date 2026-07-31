@@ -192,6 +192,7 @@ bool
 parse_compress_fixture(int argc, char** argv, struct compress_fixture* fixture) {
     fixture->test.expected_result = YAZ0_STREAM_END;
     fixture->compression_level = YAZ0_DEFAULT_COMPRESSION;
+    fixture->output_padding = 0;
 
     for (int i = 1; i < argc; ++i) {
         char const* const arg = argv[i];
@@ -215,6 +216,12 @@ parse_compress_fixture(int argc, char** argv, struct compress_fixture* fixture) 
             continue;
         }
 
+        if (strcmp(arg, "-p") == 0) {
+            if (!parse_size_arg(value, &fixture->output_padding)) {
+                return false;
+            }
+            continue;
+        }
         if (strcmp(arg, "-l") == 0) {
             if (!parse_level_arg(value, &fixture->compression_level)) {
                 return false;
@@ -235,6 +242,7 @@ parse_compress_fixture(int argc, char** argv, struct compress_fixture* fixture) 
 bool
 parse_decompress_fixture(int argc, char** argv, struct decompress_fixture* fixture) {
     fixture->test.expected_result = YAZ0_STREAM_END;
+    fixture->input_padding = 0;
 
     for (int i = 1; i < argc; ++i) {
         char const* const arg = argv[i];
@@ -253,6 +261,13 @@ parse_decompress_fixture(int argc, char** argv, struct decompress_fixture* fixtu
 
         if (handled) {
             if (!ok) {
+                return false;
+            }
+            continue;
+        }
+
+        if (strcmp(arg, "-p") == 0) {
+            if (!parse_size_arg(value, &fixture->input_padding)) {
                 return false;
             }
             continue;

@@ -47,10 +47,12 @@ struct test_fixture {
 struct compress_fixture {
     struct test_fixture test;
     int compression_level;
+    size_t output_padding;
 };
 
 struct decompress_fixture {
     struct test_fixture test;
+    size_t input_padding;
 };
 
 bool
