@@ -12,6 +12,9 @@ target_link_libraries(test_compress PRIVATE yaz0::yaz0test)
 add_executable(test_decompress test_decompress.c)
 target_link_libraries(test_decompress PRIVATE yaz0::yaz0test)
 
+add_executable(yaz0bench yaz0bench.c)
+target_link_libraries(yaz0bench PRIVATE yaz0::yaz0test)
+
 if (MSVC)
     target_compile_options(yaz0test PRIVATE /W4)
     target_compile_options(test_compress PRIVATE /W4)
