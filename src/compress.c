@@ -19,12 +19,23 @@
 
 #include <assert.h>
 #include <stdbool.h>
-
-#include "compress.h"
-
 #include <string.h>
 
+#include "compress.h"
+#include "search.h"
 #include "stream.h"
+
+static size_t
+compress_search_distance(int level) {
+    if (level == YAZ0_DEFAULT_COMPRESSION) {
+        level = YAZ0_BEST_COMPRESSION;
+    }
+    if (level == YAZ0_NO_COMPRESSION) {
+        return 0;
+    }
+    int const max_search = YAZ0_MAX_DISTANCE - 1;
+    return (size_t) (max_search * (level + 1)) / 10;
+}
 
 static struct yaz0_compress_state*
 yaz0_get_compress_state(struct yaz0_stream const* stream) {
@@ -112,10 +123,79 @@ compress_fill(struct yaz0_compress_state* state, enum yaz0_flush const flush, en
 
     size_t const lookahead = state->window_size - state->window_pos;
     if (lookahead >= min_lookahead) {
-        return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+        return compress_continue(state, YAZ0_COMPRESS_FIND_MATCH, result);
     }
     if (flush != YAZ0_FINISH) {
         return compress_suspend(result);
+    }
+
+    return compress_continue(state, YAZ0_COMPRESS_FIND_MATCH, result);
+}
+
+static bool
+compress_search(struct yaz0_compress_state* state, size_t const position,
+                size_t* match_distance, size_t* match_length) {
+    *match_distance = 0;
+    *match_length = 1;
+
+    size_t lookahead = state->window_size - state->window_pos;
+    if (lookahead > YAZ0_MAX_MATCH) {
+        lookahead = YAZ0_MAX_MATCH;
+    }
+
+    if (state->search_distance == 0 || lookahead < YAZ0_MIN_MATCH) {
+        return false;
+    }
+
+    size_t start_pos = 0;
+    if (position > state->search_distance) {
+        start_pos = position - (state->search_distance + 1);
+    }
+
+    size_t match_pos = 0;
+    size_t const length = yaz0_search(state->window, start_pos, position, lookahead, &match_pos);
+    if (length > 0) {
+        *match_distance = position - match_pos - 1;
+        *match_length = length;
+    }
+
+    return true;
+}
+
+static enum yaz0_step
+compress_find_match(struct yaz0_compress_state* state, enum yaz0_result* result) {
+    if (state->deferred) {
+        state->deferred = false;
+        state->match_distance = state->deferred_distance;
+        state->match_length = state->deferred_length;
+        return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+    }
+
+    bool has_searched = compress_search(
+        state, state->window_pos,
+        &state->match_distance,
+        &state->match_length
+    );
+
+    if (!has_searched) {
+        return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+    }
+
+    if (state->match_length >= YAZ0_MIN_MATCH) {
+        has_searched = compress_search(
+            state, state->window_pos + 1,
+            &state->deferred_distance,
+            &state->deferred_length
+        );
+        if (!has_searched) {
+            return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+        }
+
+        if (state->deferred_length >= state->match_length + 2) {
+            state->deferred = true;
+            state->match_length = 1;
+            state->match_distance = state->deferred_distance;
+        }
     }
 
     return compress_continue(state, YAZ0_COMPRESS_DONE, result);
@@ -142,6 +222,10 @@ yaz0_compress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
 
             case YAZ0_COMPRESS_FILL:
                 step = compress_fill(state, flush, &result);
+                break;
+
+            case YAZ0_COMPRESS_FIND_MATCH:
+                step = compress_find_match(state, &result);
                 break;
 
             case YAZ0_COMPRESS_ERROR:
@@ -189,11 +273,16 @@ yaz0_compress_init(struct yaz0_stream* stream, int const level,
     state->common.free = stream->free;
 
     state->mode = YAZ0_COMPRESS_HEADER;
-    state->level = level;
+    state->search_distance = compress_search_distance(level);
     state->uncompressed_size = uncompressed_size;
     state->received = 0;
     state->window_pos = 0;
     state->window_size = 0;
+    state->match_distance = 0;
+    state->match_length = 0;
+    state->deferred = false;
+    state->deferred_distance = 0;
+    state->deferred_length = 0;
 
     return YAZ0_OK;
 }

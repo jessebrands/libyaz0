@@ -16,6 +16,7 @@ set(YAZ0_SOURCES
         src/common.c
         src/compress.c
         src/decompress.c
+        src/search.c
         src/stream.c)
 
 add_library(yaz0 SHARED)
