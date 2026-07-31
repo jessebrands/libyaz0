@@ -222,7 +222,10 @@ compress_emit(struct yaz0_compress_state* state, enum yaz0_result* result) {
     size_t const l = state->match_length;
     size_t const d = state->match_distance;
     size_t const consumed = (l < YAZ0_MIN_MATCH) ? 1 : l;
-    assert(consumed <= state->window_size - state->window_pos);
+
+    if (consumed > state->window_size - state->window_pos) {
+        return compress_error(state, YAZ0_STREAM_ERROR, result);
+    }
 
     // TODO: This section could do with improved clarity.
     if (l < YAZ0_MIN_MATCH) {
