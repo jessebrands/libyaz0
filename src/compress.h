@@ -24,6 +24,7 @@
 #include "yaz0/yaz0.h"
 
 enum yaz0_compress_mode {
+   YAZ0_COMPRESS_HEADER,
    YAZ0_COMPRESS_ERROR,
    YAZ0_COMPRESS_DONE,
 };
@@ -32,6 +33,12 @@ struct yaz0_compress_state {
    struct yaz0_common_state common;
    enum yaz0_compress_mode mode;
    enum yaz0_result error;
+
+   int level;
+   uint32_t uncompressed_size;
+
+   uint8_t window[YAZ0_MAX_DISTANCE * 2 + YAZ0_MAX_MATCH];
+   size_t window_pos;
 };
 
 #endif //LIBYAZ0_COMPRESS_H

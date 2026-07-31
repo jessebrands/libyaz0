@@ -22,6 +22,10 @@
 
 #include "compress.h"
 
+#include <string.h>
+
+#include "stream.h"
+
 static struct yaz0_compress_state*
 yaz0_get_compress_state(struct yaz0_stream const* stream) {
     assert(stream != NULL);
@@ -61,6 +65,36 @@ compress_continue(struct yaz0_compress_state* state, enum yaz0_compress_mode con
     return YAZ0_STEP_CONTINUE;
 }
 
+static enum yaz0_step
+compress_header(struct yaz0_compress_state* state, enum yaz0_result* result) {
+    struct yaz0_header header = {
+        .uncompressed_size = state->uncompressed_size,
+        .alignment = 0,
+        .reserved = {0}
+    };
+
+    memcpy(&header.magic, YAZ0_MAGIC, sizeof header.magic);
+
+    uint8_t header_buf[YAZ0_HEADER_SIZE];
+    enum yaz0_result const header_result = yaz0_write_header(&header, header_buf, YAZ0_HEADER_SIZE);
+    if (header_result != YAZ0_OK) {
+        return compress_error(state, header_result, result);
+    }
+
+    size_t const want = YAZ0_HEADER_SIZE - state->window_pos;
+    uint8_t const* in_ptr = &header_buf[state->window_pos];
+    state->window_pos += yaz0_stream_write(state->common.stream, in_ptr, want);
+
+    bool const complete = state->window_pos == YAZ0_HEADER_SIZE;
+    if (!complete) {
+        return compress_suspend(result);
+    }
+
+    state->window_pos = 0;
+
+    return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+}
+
 enum yaz0_result
 yaz0_compress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
     struct yaz0_compress_state* state = yaz0_get_compress_state(stream);
@@ -76,6 +110,10 @@ yaz0_compress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
         enum yaz0_step step;
 
         switch (state->mode) {
+            case YAZ0_COMPRESS_HEADER:
+                step = compress_header(state, &result);
+                break;
+
             case YAZ0_COMPRESS_ERROR:
                 return state->error;
 
@@ -120,7 +158,10 @@ yaz0_compress_init(struct yaz0_stream* stream, int const level,
     state->common.alloc = stream->alloc;
     state->common.free = stream->free;
 
-    state->mode = YAZ0_COMPRESS_DONE;
+    state->mode = YAZ0_COMPRESS_HEADER;
+    state->level = level;
+    state->uncompressed_size = uncompressed_size;
+    state->window_pos = 0;
 
     return YAZ0_OK;
 }

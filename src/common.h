@@ -25,12 +25,15 @@
 #include "yaz0/yaz0.h"
 
 #define YAZ0_MAGIC "Yaz0"
+#define YAZ0_HEADER_SIZE 16
 #define YAZ0_MAX_DISTANCE 4096
 #define YAZ0_TOKENS_PER_BLOCK 8
 
 #define YAZ0_DISTANCE_BIAS 1
 #define YAZ0_SHORT_LENGTH_BIAS 2
 #define YAZ0_LONG_LENGTH_BIAS 18
+#define YAZ0_MIN_MATCH 3
+#define YAZ0_MAX_MATCH 273
 
 enum yaz0_step {
     YAZ0_STEP_CONTINUE,
