@@ -54,7 +54,7 @@ Troubleshooting Failed Tests
     example:
 
         ROM:  Ocarina of Time 1.0 (US)
-        Test: CompressFile.OOT_1_O_US.042D
+        Test: Compress.RomFile.OOT_1_O_US.042D
 
         <Results of the Test>
 
