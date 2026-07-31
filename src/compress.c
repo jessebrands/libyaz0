@@ -107,8 +107,22 @@ compress_header(struct yaz0_compress_state* state, enum yaz0_result* result) {
     return compress_continue(state, YAZ0_COMPRESS_FILL, result);
 }
 
+static void
+compress_slide_window(struct yaz0_compress_state* state) {
+    if (state->window_pos < 2 * YAZ0_MAX_DISTANCE) {
+        return;
+    }
+
+    size_t const drop = YAZ0_MAX_DISTANCE;
+    memmove(state->window, &state->window[drop], state->window_size - drop);
+    state->window_pos -= drop;
+    state->window_size -= drop;
+}
+
 static enum yaz0_step
 compress_fill(struct yaz0_compress_state* state, enum yaz0_flush const flush, enum yaz0_result* result) {
+    compress_slide_window(state);
+
     size_t const min_lookahead = (flush == YAZ0_FINISH) ? 1 : (YAZ0_MAX_MATCH + 1);
     size_t const want = sizeof state->window - state->window_size;
     uint8_t* out = &state->window[state->window_size];
@@ -319,6 +333,7 @@ yaz0_compress_init(struct yaz0_stream* stream, int const level,
 
     memset(state->block, 0, sizeof state->block);
     state->block_pos = 1;
+    state->block_out = 0;
     state->block_tokens = 0;
 
     return YAZ0_OK;
