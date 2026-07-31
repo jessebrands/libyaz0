@@ -143,7 +143,7 @@ compress_fill(struct yaz0_compress_state* state, enum yaz0_flush const flush, en
         return compress_suspend(result);
     }
 
-    return compress_continue(state, YAZ0_COMPRESS_FIND_MATCH, result);
+    return compress_continue(state, YAZ0_COMPRESS_DONE, result);
 }
 
 static bool
@@ -238,8 +238,26 @@ compress_emit(struct yaz0_compress_state* state, enum yaz0_result* result) {
     state->window_pos += consumed;
 
     if (state->block_tokens == YAZ0_TOKENS_PER_BLOCK) {
-        return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+        return compress_continue(state, YAZ0_COMPRESS_WRITE_BLOCK, result);
     }
+
+    return compress_continue(state, YAZ0_COMPRESS_FILL, result);
+}
+
+static enum yaz0_step
+compress_write_block(struct yaz0_compress_state* state, enum yaz0_result* result) {
+    size_t const have = state->block_pos - state->block_out;
+    uint8_t const* src = &state->block[state->block_out];
+    state->block_out += yaz0_stream_write(state->common.stream, src, have);
+
+    if (state->block_out != state->block_pos) {
+        return compress_suspend(result);
+    }
+
+    state->block[0] = 0;
+    state->block_pos = 1;
+    state->block_out = 0;
+    state->block_tokens = 0;
 
     return compress_continue(state, YAZ0_COMPRESS_FILL, result);
 }
@@ -273,6 +291,10 @@ yaz0_compress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
 
             case YAZ0_COMPRESS_EMIT:
                 step = compress_emit(state, &result);
+                break;
+
+            case YAZ0_COMPRESS_WRITE_BLOCK:
+                step = compress_write_block(state, &result);
                 break;
 
             case YAZ0_COMPRESS_ERROR:

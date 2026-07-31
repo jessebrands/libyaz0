@@ -28,6 +28,7 @@ enum yaz0_compress_mode {
    YAZ0_COMPRESS_FILL,
    YAZ0_COMPRESS_FIND_MATCH,
    YAZ0_COMPRESS_EMIT,
+   YAZ0_COMPRESS_WRITE_BLOCK,
    YAZ0_COMPRESS_ERROR,
    YAZ0_COMPRESS_DONE,
 };
@@ -54,6 +55,7 @@ struct yaz0_compress_state {
 
    uint8_t block[YAZ0_MAX_BLOCK_SIZE];
    size_t block_pos;
+   size_t block_out;
    unsigned block_tokens;
 };
 
