@@ -12,6 +12,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 option(YAZ0_BUILD_SHARED "Enable building libyaz0 as shared library" ON)
 option(YAZ0_BUILD_STATIC "Enable building libyaz0 as static library" ON)
 option(YAZ0_BUILD_TESTS "Enable building the testing suite" ${PROJECT_IS_TOP_LEVEL})
+option(YAZ0_INSTALL "Enable installation of libyaz0" ${PROJECT_IS_TOP_LEVEL})
 
 set(YAZ0_PUBLIC_HEADERS
         include/yaz0/yaz0.h)
@@ -89,4 +90,50 @@ endif ()
 if (YAZ0_BUILD_TESTS)
     enable_testing()
     add_subdirectory("test")
+endif ()
+
+set(YAZ0_INSTALL_TARGETS)
+if (YAZ0_BUILD_SHARED)
+    list(APPEND YAZ0_INSTALL_TARGETS yaz0)
+endif ()
+if (YAZ0_BUILD_STATIC)
+    list(APPEND YAZ0_INSTALL_TARGETS yaz0_static)
+endif ()
+
+if (YAZ0_INSTALL AND YAZ0_INSTALL_TARGETS)
+    include(GNUInstallDirs)
+    include(CMakePackageConfigHelpers)
+
+    install(TARGETS ${YAZ0_INSTALL_TARGETS}
+            EXPORT yaz0Targets
+            RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+            ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+            INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+    install(FILES ${YAZ0_PUBLIC_HEADERS}
+            DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/yaz0")
+
+    install(EXPORT yaz0Targets
+            FILE yaz0Targets.cmake
+            NAMESPACE yaz0::
+            DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/yaz0")
+
+    configure_package_config_file(
+            "${CMAKE_CURRENT_SOURCE_DIR}/cmake/yaz0Config.cmake.in"
+            "${CMAKE_CURRENT_BINARY_DIR}/yaz0Config.cmake"
+            INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/yaz0")
+
+    write_basic_package_version_file(
+            "${CMAKE_CURRENT_BINARY_DIR}/yaz0ConfigVersion.cmake"
+            VERSION ${PROJECT_VERSION}
+            COMPATIBILITY SameMinorVersion)
+
+    install(FILES
+            "${CMAKE_CURRENT_BINARY_DIR}/yaz0Config.cmake"
+            "${CMAKE_CURRENT_BINARY_DIR}/yaz0ConfigVersion.cmake"
+            DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/yaz0")
+
+    install(FILES COPYING COPYING.LESSER
+            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/licenses/libyaz0")
 endif ()
