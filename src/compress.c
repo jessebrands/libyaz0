@@ -121,6 +121,7 @@ compress_slide_window(struct yaz0_compress_state* state) {
 
 static enum yaz0_step
 compress_fill(struct yaz0_compress_state* state, enum yaz0_flush const flush, enum yaz0_result* result) {
+    assert(state->window_pos <= state->window_size);
     compress_slide_window(state);
 
     size_t const min_lookahead = (flush == YAZ0_FINISH) ? 1 : (YAZ0_MAX_MATCH + 1);
@@ -152,7 +153,7 @@ compress_search(struct yaz0_compress_state* state, size_t const position,
     *match_distance = 0;
     *match_length = 1;
 
-    size_t lookahead = state->window_size - state->window_pos;
+    assert(position >= state->window_size);
     size_t lookahead = state->window_size - position;
     if (lookahead > YAZ0_MAX_MATCH) {
         lookahead = YAZ0_MAX_MATCH;
@@ -221,6 +222,7 @@ compress_emit(struct yaz0_compress_state* state, enum yaz0_result* result) {
     size_t const l = state->match_length;
     size_t const d = state->match_distance;
     size_t const consumed = (l < YAZ0_MIN_MATCH) ? 1 : l;
+    assert(consumed <= state->window_size - state->window_pos);
 
     // TODO: This section could do with improved clarity.
     if (l < YAZ0_MIN_MATCH) {
