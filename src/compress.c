@@ -271,7 +271,7 @@ compress_flush(struct yaz0_compress_state* state, enum yaz0_result* result) {
         return compress_error(state, YAZ0_SIZE_MISMATCH, result);
     }
 
-    if (state->block_tokens != 0 || (state->block_out != state->block_pos && state->block_pos != 1)) {
+    if (state->block_tokens != 0) {
         size_t const have = state->block_pos - state->block_out;
         uint8_t const* src = &state->block[state->block_out];
         state->block_out += yaz0_stream_write(state->common.stream, src, have);
