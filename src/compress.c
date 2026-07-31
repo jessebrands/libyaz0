@@ -353,6 +353,10 @@ yaz0_compress_init(struct yaz0_stream* stream, int const level,
         return YAZ0_STREAM_ERROR;
     }
 
+    if ((level < YAZ0_NO_COMPRESSION || level > YAZ0_BEST_COMPRESSION) && level != YAZ0_DEFAULT_COMPRESSION) {
+        return YAZ0_STREAM_ERROR;
+    }
+
     stream->state = yaz0_alloc(stream, sizeof(struct yaz0_compress_state));
     if (stream->state == NULL) {
         return YAZ0_MEMORY_ERROR;
