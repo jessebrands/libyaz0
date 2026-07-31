@@ -1,0 +1,30 @@
+Version 0.1.0 -- 2026-07-31
+
+    First public release.
+
+  Features
+
+    * Streaming compression and decompression of the Yaz0 format.
+    * Compression levels 0 through 9, plus YAZ0_DEFAULT_COMPRESSION.
+      Level 0 stores the input without searching for matches.
+    * Support for custom memory allocators
+    * Utilities for reading and writing Yaz0 headers
+
+  Correctness
+
+    * Output is byte-exact with Nintendo's Nintendo 64 encoder.
+    * Compressor and decompressor have been tested against every file in
+      the 1.0 (US) releases of Ocarina of Time and Majora's Mask.
+    * Special care was taken to reject malformed input.
+    * Test suite with synthetic tests to check against edge cases.
+
+  Compatibility
+
+    * No API or ABI stability is guaranteed before version 1.0.
+
+  Known limitations
+
+    * The vectorized code paths described in the README are not
+      implemented yet.
+    * yaz0_compress_init does not expose the alignment hint or the
+      reserved bytes of the Yaz0 header, and writes zeros for both.
