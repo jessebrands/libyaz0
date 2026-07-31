@@ -42,3 +42,8 @@ Compiling
 
     You will need CMake 3.21 or later, as well as a C compiler that supports
     the C99 standard.
+
+Versioning
+    libyaz0 uses semantic versioning. Until the 1.0 release, no guarantee of
+    API or ABI stability is made: any 0.x release may change the public
+    interface.
