@@ -60,5 +60,4 @@ jobs:
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # Pass '-L decompress' for now to filter out compression tests.
-      run: ctest --build-config ${{ matrix.build_type }} -L decompress
+      run: ctest --build-config ${{ matrix.build_type }}
