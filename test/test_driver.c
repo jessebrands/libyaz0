@@ -25,7 +25,8 @@
 #include "test_driver.h"
 
 struct run_result
-run_compress(uint8_t const* data, size_t const size, int const level) {
+run_compress_chunked(uint8_t const* data, size_t const size, int const level,
+                     size_t const in_chunk, size_t const out_chunk) {
     struct run_result run = {0};
 
     if (size > UINT32_MAX) {
@@ -53,6 +54,8 @@ run_compress(uint8_t const* data, size_t const size, int const level) {
          16 + size + ceil(size/8)
      */
     size_t const out_size = 16 + size + (size + 7) / 8;
+    size_t const window_in = in_chunk > 0 ? in_chunk : size;
+    size_t const window_out = out_chunk > 0 ? out_chunk : out_size;
 
     run.out = malloc(out_size);
     if (run.out == NULL) {
@@ -62,11 +65,30 @@ run_compress(uint8_t const* data, size_t const size, int const level) {
     }
 
     stream.next_in = data;
-    stream.avail_in = size;
     stream.next_out = run.out;
-    stream.avail_out = out_size;
 
-    run.result = yaz0_compress(&stream, YAZ0_FINISH);
+    size_t const max_iterations = size + out_size + 64;
+
+    for (size_t i = 0; i < max_iterations; ++i) {
+        size_t const remaining_in = size - stream.total_in;
+        size_t const remaining_out = out_size - stream.total_out;
+        size_t const give = window_in < remaining_in ? window_in : remaining_in;
+        size_t const want = window_out < remaining_out ? window_out : remaining_out;
+
+        stream.avail_in = give;
+        stream.avail_out = want;
+
+        enum yaz0_flush const flush = stream.total_in + give >= size
+                                          ? YAZ0_FINISH
+                                          : YAZ0_NO_FLUSH;
+
+        run.result = yaz0_compress(&stream, flush);
+
+        if (run.result != YAZ0_OK) {
+            break;
+        }
+    }
+
     run.total_in = stream.total_in;
     run.total_out = stream.total_out;
 

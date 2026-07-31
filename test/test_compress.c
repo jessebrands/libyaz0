@@ -45,10 +45,12 @@ int main(int argc, char** argv) {
         return usage();
     }
 
-    struct run_result const run = run_compress(
+    struct run_result const run = run_compress_chunked(
         fixture.test.data,
         fixture.test.size,
-        fixture.compression_level
+        fixture.compression_level,
+        fixture.test.in_chunk,
+        fixture.test.out_chunk
     );
 
     bool passed = assert_run(run, fixture.test.expected_result);

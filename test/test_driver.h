@@ -64,11 +64,8 @@ parse_decompress_fixture(int argc, char** argv, struct decompress_fixture* fixtu
 void
 free_test_fixture(struct test_fixture* fixture);
 
-/*
-   Compresses data at the given compression level.
- */
 struct run_result
-run_compress(uint8_t const* data, size_t size, int level);
+run_compress_chunked(uint8_t const* data, size_t size, int level, size_t in_chunk, size_t out_chunk);
 
 struct run_result
 run_decompress_chunked(uint8_t const* data, size_t size, size_t in_chunk, size_t out_chunk);
