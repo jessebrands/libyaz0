@@ -79,6 +79,7 @@ yaz0_result_name(enum yaz0_result const result) {
         case YAZ0_BUFFER_ERROR: return "YAZ0_BUFFER_ERROR";
         case YAZ0_TRUNCATED: return "YAZ0_TRUNCATED";
         case YAZ0_BAD_HEADER: return "YAZ0_BAD_HEADER";
+        case YAZ0_SIZE_MISMATCH: return "YAZ0_SIZE_MISMATCH";
     }
 
     return "<invalid value>";
