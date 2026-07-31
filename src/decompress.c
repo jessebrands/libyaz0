@@ -169,7 +169,8 @@ decompress_reference(struct yaz0_decompress_state* state, enum yaz0_flush const 
         return decompress_continue(state, YAZ0_DECOMPRESS_REFERENCE, result);
     }
 
-    size_t const distance = ((state->reference[0] & 0xF) << 8 | state->reference[1]) + YAZ0_DISTANCE_BIAS;
+    size_t const encoded = ((size_t) state->reference[0] & 0x0F) << 8 | (size_t) state->reference[1];
+    size_t const distance = encoded + YAZ0_DISTANCE_BIAS;
     size_t const length = (state->reference[0] >> 4) != 0
                               ? (state->reference[0] >> 4) + YAZ0_SHORT_LENGTH_BIAS
                               : state->reference[2] + YAZ0_LONG_LENGTH_BIAS;
