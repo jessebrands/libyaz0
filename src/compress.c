@@ -143,7 +143,7 @@ compress_fill(struct yaz0_compress_state* state, enum yaz0_flush const flush, en
         return compress_suspend(result);
     }
 
-    return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+    return compress_continue(state, YAZ0_COMPRESS_FLUSH, result);
 }
 
 static bool
@@ -262,6 +262,25 @@ compress_write_block(struct yaz0_compress_state* state, enum yaz0_result* result
     return compress_continue(state, YAZ0_COMPRESS_FILL, result);
 }
 
+static enum yaz0_step
+compress_flush(struct yaz0_compress_state* state, enum yaz0_result* result) {
+    if (state->received != state->uncompressed_size) {
+        return compress_error(state, YAZ0_SIZE_MISMATCH, result);
+    }
+
+    if (state->block_tokens != 0 || (state->block_out != state->block_pos && state->block_pos != 1)) {
+        size_t const have = state->block_pos - state->block_out;
+        uint8_t const* src = &state->block[state->block_out];
+        state->block_out += yaz0_stream_write(state->common.stream, src, have);
+
+        if (state->block_out != state->block_pos) {
+            return compress_suspend(result);
+        }
+    }
+
+    return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+}
+
 enum yaz0_result
 yaz0_compress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
     struct yaz0_compress_state* state = yaz0_get_compress_state(stream);
@@ -295,6 +314,10 @@ yaz0_compress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
 
             case YAZ0_COMPRESS_WRITE_BLOCK:
                 step = compress_write_block(state, &result);
+                break;
+
+            case YAZ0_COMPRESS_FLUSH:
+                step = compress_flush(state, &result);
                 break;
 
             case YAZ0_COMPRESS_ERROR:
