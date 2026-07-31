@@ -22,16 +22,47 @@
 
 #include "test_driver.h"
 
+static int
+usage(void) {
+    fprintf(
+        stderr,
+        "usage: test_decompress"
+        " [-i bytes] [-o bytes] [-r code] file expected_file\n"
+
+        "  -i bytes  input chunk size\n"
+        "  -o bytes  output chunk size\n"
+        "  -r code   expected result code \n"
+    );
+
+    return EXIT_FAILURE;
+}
+
 int main(int argc, char** argv) {
-    if (argc < 3) {
-        fprintf(stderr, "usage: test_decompress [file] [expected_file]\n");
-        return EXIT_FAILURE;
+    struct decompress_fixture fixture = {0};
+    if (!parse_decompress_fixture(argc, argv, &fixture)) {
+        return usage();
     }
 
-    char const* in_filename = argv[1];
-    char const* expected_filename = argv[2];
+    struct run_result const run = run_decompress_chunked(
+        fixture.test.data,
+        fixture.test.size,
+        fixture.test.in_chunk,
+        fixture.test.out_chunk
+    );
 
-    return assert_decompress_file(in_filename, expected_filename)
-               ? EXIT_SUCCESS
-               : EXIT_FAILURE;
+    bool passed = assert_run(run, fixture.test.expected_result);
+
+    if (!assert_total_in(run, fixture.test.size, 16)) {
+        passed = false;
+    }
+    if (!assert_total_out(run, fixture.test.expected_size, 0)) {
+        passed = false;
+    }
+    if (!assert_out(run, fixture.test.expected, fixture.test.expected_size)) {
+        passed = false;
+    }
+
+    free(run.out);
+    free_test_fixture(&fixture.test);
+    return passed ? EXIT_SUCCESS : EXIT_FAILURE;
 }

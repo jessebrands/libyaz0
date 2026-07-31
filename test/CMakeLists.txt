@@ -4,7 +4,8 @@ set(YAZ0_TEST_DATA_DIR "" CACHE PATH
 add_library(yaz0test STATIC)
 target_link_libraries(yaz0test PUBLIC yaz0-static)
 target_sources(yaz0test PRIVATE
-        test_driver.c)
+        test_driver.c
+        test_utility.c)
 
 set_target_properties(yaz0test PROPERTIES DEBUG_POSTFIX "d")
 

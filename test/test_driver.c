@@ -100,6 +100,9 @@ struct run_result run_decompress_chunked(uint8_t const* data, size_t const size,
     }
 
     size_t const out_size = header.uncompressed_size;
+    size_t const window_in = in_chunk > 0 ? in_chunk : size;
+    size_t const window_out = out_chunk > 0 ? out_chunk : out_size;
+
     run.out = malloc(out_size > 0 ? out_size : 1);
     if (run.out == NULL) {
         fprintf(stderr, "ERROR:  Failed to allocate output buffer\n");
@@ -113,13 +116,10 @@ struct run_result run_decompress_chunked(uint8_t const* data, size_t const size,
     size_t const max_iterations = size + out_size + 64;
 
     for (size_t i = 0; i < max_iterations; ++i) {
-        size_t const give = stream.total_in + in_chunk > size
-                                ? size - stream.total_in
-                                : in_chunk;
-
-        size_t const want = stream.total_out + out_chunk > out_size
-                                ? out_size - stream.total_out
-                                : out_chunk;
+        size_t const remaining_in = size - stream.total_in;
+        size_t const remaining_out = out_size - stream.total_out;
+        size_t const give = window_in < remaining_in ? window_in : remaining_in;
+        size_t const want = window_out < remaining_out ? window_out : remaining_out;
 
         stream.avail_in = give;
         stream.avail_out = want;
@@ -141,10 +141,6 @@ struct run_result run_decompress_chunked(uint8_t const* data, size_t const size,
 cleanup_stream:
     yaz0_decompress_end(&stream);
     return run;
-}
-
-struct run_result run_decompress(uint8_t const* data, size_t const size) {
-    return run_decompress_chunked(data, size, 7, 5);
 }
 
 bool
@@ -247,156 +243,4 @@ assert_out(struct run_result const run, uint8_t const* expected, size_t const ex
     }
 
     return true;
-}
-
-bool
-assert_compress(uint8_t const* data, size_t const data_size, int const level,
-                uint8_t const* expected, size_t const expected_size) {
-    struct run_result const run = run_compress(data, data_size, level);
-    bool passed = assert_run(run, YAZ0_STREAM_END);
-
-    if (!assert_total_in(run, data_size, 0)) {
-        passed = false;
-    }
-    if (!assert_total_out(run, expected_size, 16)) {
-        passed = false;
-    }
-    if (!assert_out(run, expected, expected_size)) {
-        passed = false;
-    }
-
-    free(run.out);
-    return passed;
-}
-
-bool
-assert_decompress(uint8_t const* data, size_t const data_size,
-                  uint8_t const* expected, size_t const expected_size) {
-    struct run_result const run = run_decompress(data, data_size);
-    bool passed = assert_run(run, YAZ0_STREAM_END);
-
-    if (!assert_total_in(run, data_size, 16)) {
-        passed = false;
-    }
-    if (!assert_total_out(run, expected_size, 0)) {
-        passed = false;
-    }
-    if (!assert_out(run, expected, expected_size)) {
-        passed = false;
-    }
-
-    free(run.out);
-    return passed;
-}
-
-static bool
-load_file(char const* filename, uint8_t** data, size_t* size) {
-    assert(filename != NULL);
-    assert(data != NULL);
-    assert(size != NULL);
-
-    *data = NULL;
-    *size = 0;
-
-    FILE* file = fopen(filename, "rb");
-    if (file == NULL) {
-        return false;
-    }
-
-    bool passed = false;
-    uint8_t* buffer = NULL;
-
-    fseek(file, 0, SEEK_END);
-    long const file_size = ftell(file);
-    if (file_size < 0) {
-        goto cleanup_file;
-    }
-
-    // Empty files are valid.
-    if (file_size == 0) {
-        passed = true;
-        goto cleanup_file;
-    }
-
-    rewind(file);
-    buffer = malloc((size_t) file_size);
-    if (buffer == NULL) {
-        goto cleanup_buffer;
-    }
-
-    if (fread(buffer, 1, (size_t) file_size, file) != (size_t) file_size) {
-        goto cleanup_buffer;
-    }
-
-    *data = buffer;
-    *size = (size_t) file_size;
-    buffer = NULL;
-    passed = true;
-
-cleanup_buffer:
-    free(buffer);
-cleanup_file:
-    fclose(file);
-    return passed;
-}
-
-bool
-assert_compress_file(char const* filename, int const level, char const* expected_filename) {
-    assert(filename != NULL);
-    assert(expected_filename != NULL);
-
-    bool passed = false;
-    uint8_t* data = NULL;
-    size_t data_size = 0;
-
-    if (!load_file(filename, &data, &data_size)) {
-        fprintf(stderr, "ERROR: Could not open input file '%s'\n", filename);
-        goto cleanup_input;
-    }
-
-    uint8_t* expected = NULL;
-    size_t expected_size = 0;
-
-    if (!load_file(expected_filename, &expected, &expected_size)) {
-        fprintf(stderr, "ERROR: Could not open verification file '%s'\n", expected_filename);
-        goto cleanup_input;
-    }
-
-    passed = assert_compress(data, data_size, level, expected, expected_size);
-    free(expected);
-
-cleanup_input:
-    free(data);
-    return passed;
-}
-
-bool
-assert_decompress_file(char const* filename, char const* expected_filename) {
-    assert(filename != NULL);
-    assert(expected_filename != NULL);
-
-    bool passed = false;
-
-    uint8_t* data = NULL;
-    size_t data_size = 0;
-
-    if (!load_file(filename, &data, &data_size)) {
-        fprintf(stderr, "ERROR: Could not open input file '%s'\n", filename);
-        goto cleanup_input;
-    }
-
-    uint8_t* expected = NULL;
-    size_t expected_size = 0;
-
-    if (!load_file(expected_filename, &expected, &expected_size)) {
-        fprintf(stderr, "ERROR: Could not open verification file '%s'\n", expected_filename);
-        goto cleanup_input;
-    }
-
-    passed = assert_decompress(data, data_size, expected, expected_size);
-    free(expected);
-
-cleanup_input:
-    free(data);
-    return passed;
 }
