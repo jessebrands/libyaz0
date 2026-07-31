@@ -40,7 +40,7 @@ run_compress_chunked(uint8_t const* data, size_t const size, int const level,
     }
 
     struct yaz0_stream stream = {0};
-    run.result = yaz0_compress_init(&stream, level, size);
+    run.result = yaz0_compress_init(&stream, level, (uint32_t) size);
     if (run.result != YAZ0_OK) {
         fprintf(stderr, "FAILED: Could not initialize compressor\n");
         return run;
