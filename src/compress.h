@@ -27,6 +27,7 @@ enum yaz0_compress_mode {
    YAZ0_COMPRESS_HEADER,
    YAZ0_COMPRESS_FILL,
    YAZ0_COMPRESS_FIND_MATCH,
+   YAZ0_COMPRESS_EMIT,
    YAZ0_COMPRESS_ERROR,
    YAZ0_COMPRESS_DONE,
 };
@@ -50,6 +51,10 @@ struct yaz0_compress_state {
    bool deferred;
    size_t deferred_distance;
    size_t deferred_length;
+
+   uint8_t block[YAZ0_MAX_BLOCK_SIZE];
+   size_t block_pos;
+   unsigned block_tokens;
 };
 
 #endif //LIBYAZ0_COMPRESS_H

@@ -35,6 +35,9 @@
 #define YAZ0_MIN_MATCH 3
 #define YAZ0_MAX_MATCH 273
 
+#define YAZ0_MAX_BLOCK_SIZE 25
+
+
 enum yaz0_step {
     YAZ0_STEP_CONTINUE,
     YAZ0_STEP_RETURN,

@@ -168,7 +168,7 @@ compress_find_match(struct yaz0_compress_state* state, enum yaz0_result* result)
         state->deferred = false;
         state->match_distance = state->deferred_distance;
         state->match_length = state->deferred_length;
-        return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+        return compress_continue(state, YAZ0_COMPRESS_EMIT, result);
     }
 
     bool has_searched = compress_search(
@@ -178,7 +178,7 @@ compress_find_match(struct yaz0_compress_state* state, enum yaz0_result* result)
     );
 
     if (!has_searched) {
-        return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+        return compress_continue(state, YAZ0_COMPRESS_EMIT, result);
     }
 
     if (state->match_length >= YAZ0_MIN_MATCH) {
@@ -188,7 +188,7 @@ compress_find_match(struct yaz0_compress_state* state, enum yaz0_result* result)
             &state->deferred_length
         );
         if (!has_searched) {
-            return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+            return compress_continue(state, YAZ0_COMPRESS_EMIT, result);
         }
 
         if (state->deferred_length >= state->match_length + 2) {
@@ -198,7 +198,36 @@ compress_find_match(struct yaz0_compress_state* state, enum yaz0_result* result)
         }
     }
 
-    return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+    return compress_continue(state, YAZ0_COMPRESS_EMIT, result);
+}
+
+static enum yaz0_step
+compress_emit(struct yaz0_compress_state* state, enum yaz0_result* result) {
+    size_t const l = state->match_length;
+    size_t const d = state->match_distance;
+    size_t const consumed = (l < YAZ0_MIN_MATCH) ? 1 : l;
+
+    // TODO: This section could do with improved clarity.
+    if (l < YAZ0_MIN_MATCH) {
+        state->block[state->block_pos++] = state->window[state->window_pos];
+        state->block[0] |= (uint8_t) (0x80 >> state->block_tokens);
+    } else if (l < 18) {
+        state->block[state->block_pos++] = (uint8_t) (((l - 2) << 4) | (d >> 8));
+        state->block[state->block_pos++] = (uint8_t) (d & 0xFF);
+    } else {
+        state->block[state->block_pos++] = (uint8_t) (d >> 8);
+        state->block[state->block_pos++] = (uint8_t) (d & 0xFF);
+        state->block[state->block_pos++] = (uint8_t) (l - 18);
+    }
+
+    state->block_tokens++;
+    state->window_pos += consumed;
+
+    if (state->block_tokens == YAZ0_TOKENS_PER_BLOCK) {
+        return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+    }
+
+    return compress_continue(state, YAZ0_COMPRESS_FILL, result);
 }
 
 enum yaz0_result
@@ -226,6 +255,10 @@ yaz0_compress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
 
             case YAZ0_COMPRESS_FIND_MATCH:
                 step = compress_find_match(state, &result);
+                break;
+
+            case YAZ0_COMPRESS_EMIT:
+                step = compress_emit(state, &result);
                 break;
 
             case YAZ0_COMPRESS_ERROR:
@@ -283,6 +316,10 @@ yaz0_compress_init(struct yaz0_stream* stream, int const level,
     state->deferred = false;
     state->deferred_distance = 0;
     state->deferred_length = 0;
+
+    memset(state->block, 0, sizeof state->block);
+    state->block_pos = 1;
+    state->block_tokens = 0;
 
     return YAZ0_OK;
 }
