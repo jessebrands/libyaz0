@@ -41,6 +41,7 @@ enum yaz0_result {
     YAZ0_BUFFER_ERROR = -5,
     YAZ0_TRUNCATED = -6,
     YAZ0_BAD_HEADER = -7,
+    YAZ0_SIZE_MISMATCH = -8,
 };
 
 enum yaz0_flush {

@@ -91,6 +91,32 @@ compress_header(struct yaz0_compress_state* state, enum yaz0_result* result) {
     }
 
     state->window_pos = 0;
+    state->window_size = 0;
+
+    return compress_continue(state, YAZ0_COMPRESS_FILL, result);
+}
+
+static enum yaz0_step
+compress_fill(struct yaz0_compress_state* state, enum yaz0_flush const flush, enum yaz0_result* result) {
+    size_t const min_lookahead = (flush == YAZ0_FINISH) ? 1 : (YAZ0_MAX_MATCH + 1);
+    size_t const want = sizeof state->window - state->window_size;
+    uint8_t* out = &state->window[state->window_size];
+
+    size_t const bytes_in = yaz0_stream_read(state->common.stream, out, want);
+    state->received += bytes_in;
+    state->window_size += bytes_in;
+
+    if (state->received > state->uncompressed_size) {
+        return compress_error(state, YAZ0_SIZE_MISMATCH, result);
+    }
+
+    size_t const lookahead = state->window_size - state->window_pos;
+    if (lookahead >= min_lookahead) {
+        return compress_continue(state, YAZ0_COMPRESS_DONE, result);
+    }
+    if (flush != YAZ0_FINISH) {
+        return compress_suspend(result);
+    }
 
     return compress_continue(state, YAZ0_COMPRESS_DONE, result);
 }
@@ -112,6 +138,10 @@ yaz0_compress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
         switch (state->mode) {
             case YAZ0_COMPRESS_HEADER:
                 step = compress_header(state, &result);
+                break;
+
+            case YAZ0_COMPRESS_FILL:
+                step = compress_fill(state, flush, &result);
                 break;
 
             case YAZ0_COMPRESS_ERROR:
@@ -161,7 +191,9 @@ yaz0_compress_init(struct yaz0_stream* stream, int const level,
     state->mode = YAZ0_COMPRESS_HEADER;
     state->level = level;
     state->uncompressed_size = uncompressed_size;
+    state->received = 0;
     state->window_pos = 0;
+    state->window_size = 0;
 
     return YAZ0_OK;
 }

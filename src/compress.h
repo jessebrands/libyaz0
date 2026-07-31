@@ -25,6 +25,7 @@
 
 enum yaz0_compress_mode {
    YAZ0_COMPRESS_HEADER,
+   YAZ0_COMPRESS_FILL,
    YAZ0_COMPRESS_ERROR,
    YAZ0_COMPRESS_DONE,
 };
@@ -36,9 +37,11 @@ struct yaz0_compress_state {
 
    int level;
    uint32_t uncompressed_size;
+   size_t received;
 
    uint8_t window[YAZ0_MAX_DISTANCE * 2 + YAZ0_MAX_MATCH];
    size_t window_pos;
+   size_t window_size;
 };
 
 #endif //LIBYAZ0_COMPRESS_H
