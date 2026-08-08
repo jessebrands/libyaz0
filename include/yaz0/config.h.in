@@ -1,0 +1,37 @@
+/*
+ * config.h: libyaz0 configuration
+ * Copyright (C) 2026 Jesse Gerard Brands
+ *
+ * !!!! THIS FILE IS GENERATED AUTOMATICALLY, DO NOT EDIT !!!!
+ *
+ * This file is part of libyaz0.
+ *
+ * libyaz0 is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * libyaz0 is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libyaz0. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#ifndef LIBYAZ0_CONFIG_H
+#define LIBYAZ0_CONFIG_H
+
+#define YAZ0_MAKE_VERSION(major, minor, patch)                                \
+      ((((major) & 0x7FFF) << 16)                                             \
+    |  (((minor) & 0xFF)   << 8)                                              \
+    |   ((patch) & 0xFF))
+
+#define YAZ0_VERSION_STRING "@PROJECT_VERSION@"
+#define YAZ0_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define YAZ0_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define YAZ0_VERSION_PATCH @PROJECT_VERSION_PATCH@
+#define YAZ0_VERSION YAZ0_MAKE_VERSION(YAZ0_VERSION_MAJOR, YAZ0_VERSION_MINOR, YAZ0_VERSION_PATCH)
+
+#endif //LIBYAZ0_CONFIG_H

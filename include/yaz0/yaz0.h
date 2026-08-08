@@ -23,6 +23,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "yaz0/config.h"
+
 #if defined _WIN32 || defined __CYGWIN__
 #  if defined YAZ0_STATIC
 #    define YAZ0_API
