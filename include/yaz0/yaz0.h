@@ -125,6 +125,21 @@ enum yaz0_level {
 };
 
 /*!
+ * \brief Options that can be passed to the compressor.
+ * \see yaz0_compress_init_with_options
+ */
+struct yaz0_compress_options {
+    //! Compression level.
+    int level;
+
+    //! Value for the alignment hint, copied into header.
+    uint32_t alignment;
+
+    //! Value for the reserved bytes, copied into the header.
+    uint8_t reserved[4];
+};
+
+/*!
  * Structure describing a Yaz0 header.
  */
 struct yaz0_header {
@@ -138,7 +153,7 @@ struct yaz0_header {
     uint32_t alignment;
 
     //! Unused, reserved by Nintendo.
-    char reserved[4];
+    uint8_t reserved[4];
 };
 
 /*!
@@ -191,6 +206,13 @@ struct yaz0_stream {
 };
 
 /*!
+ * \brief Returns default options for the compressor.
+ * \return Default compression options.
+ */
+YAZ0_API struct yaz0_compress_options
+yaz0_default_compress_options(void);
+
+/*!
  * \brief Initializes the stream for compression.
  * \param stream Pointer to the stream object to initialize.
  * \param level Compression level.
@@ -202,6 +224,19 @@ struct yaz0_stream {
 YAZ0_API enum yaz0_result
 yaz0_compress_init(struct yaz0_stream* stream, int level,
                    uint32_t uncompressed_size);
+
+/*!
+ * \brief Initializes the stream for compression.
+ * \param stream Pointer to the stream object to initialize.
+ * \param uncompressed_size Size in bytes of the uncompressed data.
+ * \param options Options to be passed to the compressor.
+ * \return YAZ0_OK on success.
+ * \note The caller must call yaz0_compress_end when done.
+ * \see yaz0_default_compress_options
+ */
+YAZ0_API enum yaz0_result
+yaz0_compress_init_with_options(struct yaz0_stream* stream, uint32_t uncompressed_size,
+                                struct yaz0_compress_options options);
 
 /*!
  * \brief Compresses input data into the output buffer.

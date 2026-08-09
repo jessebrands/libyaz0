@@ -42,6 +42,8 @@ struct yaz0_compress_state {
 
    size_t search_distance;
    uint32_t uncompressed_size;
+   uint32_t alignment;
+   uint8_t header_reserved[4];
    size_t received;
 
    uint8_t window[YAZ0_MAX_DISTANCE * 2 + YAZ0_MAX_MATCH];
