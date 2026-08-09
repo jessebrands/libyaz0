@@ -405,3 +405,18 @@ yaz0_compress_end(struct yaz0_stream* stream) {
     yaz0_free(stream, stream->state);
     stream->state = NULL;
 }
+
+size_t
+yaz0_compress_bound(uint32_t const uncompressed_size) {
+    uint64_t const bound = (uint64_t) YAZ0_HEADER_SIZE
+                           + (uint64_t) uncompressed_size
+                           + ((uint64_t) uncompressed_size + 7) / 8;
+
+#if SIZE_MAX < UINT64_MAX
+    if (bound > (uint64_t) SIZE_MAX) {
+        return 0;
+    }
+#endif
+
+    return (size_t) bound;
+}

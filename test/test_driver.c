@@ -46,14 +46,7 @@ run_compress_chunked(uint8_t const* data, size_t const size, int const level,
         return run;
     }
 
-    /* The literal worst case scenario is all literals. In such a case we'd
-       add an extra byte for every 8 bytes, resulting in a compression ratio
-       of 1.125.
-
-       The formula to calculate the size of an incompressible file is:
-         16 + size + ceil(size/8)
-     */
-    size_t const out_size = 16 + size + (size + 7) / 8;
+    size_t const out_size = yaz0_compress_bound((uint32_t) size);
     size_t const window_in = in_chunk > 0 ? in_chunk : size;
     size_t const window_out = out_chunk > 0 ? out_chunk : out_size;
 

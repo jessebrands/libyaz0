@@ -224,6 +224,15 @@ YAZ0_API void
 yaz0_compress_end(struct yaz0_stream* stream);
 
 /*!
+ * \brief Returns the worst-case compression scenario size.
+ * \param uncompressed_size Uncompressed size in bytes.
+ * \return Compressed size in the worst-case scenario.
+ * \note This value is 112.5% of the uncompressed size.
+ */
+YAZ0_API size_t
+yaz0_compress_bound(uint32_t uncompressed_size);
+
+/*!
  * \brief Initializes a stream for decompression.
  * \param stream Pointer to the stream object to initialize.
  * \return YAZ0_OK on success.
