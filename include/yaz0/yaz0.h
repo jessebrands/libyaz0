@@ -110,14 +110,14 @@ enum yaz0_flush {
 };
 
 /*!
- * Controls how much effort the compressor.
+ * Controls how much effort the compressor makes to compress data.
  */
 enum yaz0_level {
     //! Picks the library default compression level.
     YAZ0_DEFAULT_COMPRESSION = -1,
 
     //! Performs no compression at all, encodes literals only. Output will be
-    //! 112.5% larger than the input using this.
+    //! 12.5% larger than the input using this.
     YAZ0_NO_COMPRESSION = 0,
 
     //! The best compression, the slowest speed.
@@ -141,34 +141,63 @@ struct yaz0_header {
     char reserved[4];
 };
 
-
+/*!
+ * \brief State for a single compression or decompression.
+ *
+ * The caller must zero-initialize the stream before use:
+ *
+ *     struct yaz0_stream stream = {0};
+ *
+ * Set next_in, avail_in, next_out and avail_out around each call. The library
+ * advances all four as it consumes and produces, so a call that suspends with
+ * YAZ0_OK is resumed by refilling whichever buffer ran out and calling again.
+ *
+ * \note To route allocation through your own functions, set both alloc and
+ *       free, plus opaque if your allocator needs it. Leave all three zero
+ *       and the library uses a default.
+ * \see yaz0_compress_init, yaz0_decompress_init
+ */
 struct yaz0_stream {
+    //! Next input byte to read.
     uint8_t const* next_in;
+
+    //! Bytes available for reading at next_in.
     size_t avail_in;
+
+    //! Total bytes consumed from the input across every call on this stream.
     size_t total_in;
 
+    //! Next position to write output to.
     uint8_t* next_out;
+
+    //! Space remaining for writing at next_out.
     size_t avail_out;
+
+    //! Total bytes written to the output across every call on this stream.
+    //! After YAZ0_STREAM_END this is the exact size of the result.
     size_t total_out;
 
+    //! Passed unchanged as the first argument to alloc and free.
     void* opaque;
+
+    //! Allocation function, or NULL to use a default allocator.
     yaz0_alloc_func alloc;
+
+    //! Deallocation function, or NULL to use a default allocator.
     yaz0_free_func free;
 
+    //! Private state library state.
     void* state;
 };
 
 /*!
  * \brief Initializes the stream for compression.
  * \param stream Pointer to the stream object to initialize.
- * \param level Compression level between 1 and 9; the former provides the worst
- *              compression at the fastest speed, the latter the best
- *              compression at the slowest speed. The numbers in between are a
- *              compromise between the two values. Level 0 performs no
- *              compression at all.
+ * \param level Compression level.
  * \param uncompressed_size Size in bytes of the uncompressed data.
  * \return YAZ0_OK on success.
  * \note The caller must call yaz0_compress_end when done.
+ * \see yaz0_level
  */
 YAZ0_API enum yaz0_result
 yaz0_compress_init(struct yaz0_stream* stream, int level,
