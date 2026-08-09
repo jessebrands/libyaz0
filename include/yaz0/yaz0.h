@@ -202,7 +202,7 @@ struct yaz0_stream {
     //! Deallocation function, or NULL to use a default allocator.
     yaz0_free_func free;
 
-    //! Private state library state.
+    //! Private library state.
     void* state;
 };
 
