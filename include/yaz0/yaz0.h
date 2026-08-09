@@ -308,6 +308,15 @@ YAZ0_API void
 yaz0_decompress_end(struct yaz0_stream* stream);
 
 /*!
+ * \brief Resets the state of the decompressor to the initial state.
+ * \param stream Pointer to the stream object to initialize.
+ * \return YAZ0_OK on success.
+ * \note Callers must call yaz0_decompress_end when done.
+ */
+YAZ0_API enum yaz0_result
+yaz0_decompress_reset(struct yaz0_stream* stream);
+
+/*!
  * \brief Decodes a Yaz0 header from a buffer.
  * \param data Buffer to read.
  * \param size Size of the buffer in bytes.

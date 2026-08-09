@@ -40,6 +40,19 @@ yaz0_get_decompress_state(struct yaz0_stream const* stream) {
     return state;
 }
 
+static void
+decompress_configure(struct yaz0_decompress_state* state) {
+    state->mode = YAZ0_DECOMPRESS_HEADER;
+    state->error = YAZ0_OK;
+    state->history_pos = 0;
+    state->remaining = 0;
+    state->group_bitmask = 0;
+    state->group_remaining = 0;
+    state->reference_pos = 0;
+    state->copy_distance = 0;
+    state->copy_length = 0;
+}
+
 static enum yaz0_step
 decompress_error(struct yaz0_decompress_state* state, enum yaz0_result const code,
                  enum yaz0_result* result) {
@@ -124,8 +137,8 @@ decompress_token(struct yaz0_decompress_state* state, enum yaz0_result* result) 
     state->reference_pos = 0;
 
     enum yaz0_decompress_mode const next_mode = literal
-                                              ? YAZ0_DECOMPRESS_LITERAL
-                                              : YAZ0_DECOMPRESS_REFERENCE;
+                                                    ? YAZ0_DECOMPRESS_LITERAL
+                                                    : YAZ0_DECOMPRESS_REFERENCE;
 
     return decompress_continue(state, next_mode, result);
 }
@@ -292,15 +305,7 @@ yaz0_decompress_init(struct yaz0_stream* stream) {
     state->common.alloc = stream->alloc;
     state->common.free = stream->free;
 
-    // Set the initial decompressor state.
-    state->mode = YAZ0_DECOMPRESS_HEADER;
-    state->history_pos = 0;
-    state->remaining = 0;
-    state->group_bitmask = 0;
-    state->group_remaining = 0;
-    state->reference_pos = 0;
-    state->copy_distance = 0;
-    state->copy_length = 0;
+    decompress_configure(state);
 
     return YAZ0_OK;
 }
@@ -314,4 +319,18 @@ yaz0_decompress_end(struct yaz0_stream* stream) {
 
     yaz0_free(stream, stream->state);
     stream->state = NULL;
+}
+
+enum yaz0_result
+yaz0_decompress_reset(struct yaz0_stream* stream) {
+    struct yaz0_decompress_state* state = yaz0_get_decompress_state(stream);
+    if (state == NULL) {
+        return YAZ0_STREAM_ERROR;
+    }
+
+    decompress_configure(state);
+
+    stream->total_in = 0;
+    stream->total_out = 0;
+    return YAZ0_OK;
 }
