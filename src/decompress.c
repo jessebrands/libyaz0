@@ -119,7 +119,7 @@ decompress_token(struct yaz0_decompress_state* state, enum yaz0_result* result) 
     }
 
     bool const literal = state->group_bitmask & 0x80;
-    state->group_bitmask <<= 1;
+    state->group_bitmask = (uint8_t) (state->group_bitmask << 1);
     state->group_remaining--;
     state->reference_pos = 0;
 
