@@ -86,6 +86,23 @@ yaz0_result_name(enum yaz0_result const result) {
     return "<invalid value>";
 }
 
+char const* yaz0_result_string(enum yaz0_result result) {
+    switch (result) {
+        case YAZ0_OK: return "ok";
+        case YAZ0_STREAM_END: return "stream has reached the end";
+        case YAZ0_ERRNO: return "application error";
+        case YAZ0_STREAM_ERROR: return "stream is invalid";
+        case YAZ0_DATA_ERROR: return "data is invalid";
+        case YAZ0_MEMORY_ERROR: return "out of memory";
+        case YAZ0_BUFFER_ERROR: return "progress has stalled";
+        case YAZ0_TRUNCATED: return "input ended unexpectedly";
+        case YAZ0_BAD_HEADER: return "not a Yaz0 stream";
+        case YAZ0_SIZE_MISMATCH: return "data does not match declared size";
+    }
+
+    return "unknown";
+}
+
 uint32_t
 yaz0_version(void) {
     return YAZ0_VERSION;

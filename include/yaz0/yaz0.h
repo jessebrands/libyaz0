@@ -278,6 +278,14 @@ YAZ0_API char const*
 yaz0_result_name(enum yaz0_result result);
 
 /*!
+ * \brief Returns a human-readable description for a result code.
+ * \param result Library result code.
+ * \return Null-terminated string.
+ */
+YAZ0_API char const*
+yaz0_result_string(enum yaz0_result result);
+
+/*!
  * \brief Returns the library version as a packed integer.
  * \return Packed integer with the library version.
  * \see YAZ0_MAKE_VERSION
