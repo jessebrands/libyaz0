@@ -277,6 +277,22 @@ yaz0_write_header(struct yaz0_header const* header, uint8_t* dst, size_t size);
 YAZ0_API char const*
 yaz0_result_name(enum yaz0_result result);
 
+/*!
+ * \brief Returns the library version as a packed integer.
+ * \return Packed integer with the library version.
+ * \see YAZ0_MAKE_VERSION
+ */
+YAZ0_API uint32_t
+yaz0_version(void);
+
+/*!
+ * \brief Returns the library version as a string.
+ * \return Version string.
+ * \see YAZ0_VERSION_STRING
+ */
+YAZ0_API char const*
+yaz0_version_string(void);
+
 #if defined __cplusplus
 }
 #endif

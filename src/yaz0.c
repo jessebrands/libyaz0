@@ -85,3 +85,13 @@ yaz0_result_name(enum yaz0_result const result) {
 
     return "<invalid value>";
 }
+
+uint32_t
+yaz0_version(void) {
+    return YAZ0_VERSION;
+}
+
+char const*
+yaz0_version_string(void) {
+    return YAZ0_VERSION_STRING;
+}
