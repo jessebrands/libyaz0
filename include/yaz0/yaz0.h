@@ -42,6 +42,7 @@
 
 #if defined __cplusplus
 extern "C" {
+
 #endif
 
 /*!
@@ -257,6 +258,19 @@ yaz0_compress(struct yaz0_stream* stream, enum yaz0_flush flush);
  */
 YAZ0_API void
 yaz0_compress_end(struct yaz0_stream* stream);
+
+/*!
+ * \brief Resets the state of the compressor to the initial state.
+ * \param stream Pointer to the stream object to initialize.
+ * \param uncompressed_size Size in bytes of the uncompressed data.
+ * \param options Options to be passed to the compressor.
+ * \return YAZ0_OK on success.
+ * \note The caller must call yaz0_compress_end when done.
+ * \see yaz0_default_compress_options
+ */
+YAZ0_API enum yaz0_result
+yaz0_compress_reset(struct yaz0_stream* stream, uint32_t uncompressed_size,
+                    struct yaz0_compress_options options);
 
 /*!
  * \brief Returns the worst-case compression scenario size.

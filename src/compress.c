@@ -40,7 +40,7 @@ compress_search_distance(int level) {
 
 static void
 compress_configure(struct yaz0_compress_state* state, uint32_t const uncompressed_size,
-    struct yaz0_compress_options const* options) {
+                   struct yaz0_compress_options const* options) {
     state->mode = YAZ0_COMPRESS_HEADER;
     state->error = YAZ0_OK;
     state->search_distance = compress_search_distance(options->level);
@@ -375,7 +375,7 @@ yaz0_compress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
 
 struct yaz0_compress_options
 yaz0_default_compress_options(void) {
-    return (struct yaz0_compress_options) {
+    return (struct yaz0_compress_options){
         .level = YAZ0_DEFAULT_COMPRESSION,
         .alignment = 0,
         .reserved = {0},
@@ -434,6 +434,26 @@ yaz0_compress_end(struct yaz0_stream* stream) {
 
     yaz0_free(stream, stream->state);
     stream->state = NULL;
+}
+
+enum yaz0_result
+yaz0_compress_reset(struct yaz0_stream* stream, uint32_t const uncompressed_size,
+                    struct yaz0_compress_options const options) {
+    struct yaz0_compress_state* state = yaz0_get_compress_state(stream);
+    if (state == NULL) {
+        return YAZ0_STREAM_ERROR;
+    }
+
+    if ((options.level < YAZ0_NO_COMPRESSION || options.level > YAZ0_BEST_COMPRESSION)
+        && options.level != YAZ0_DEFAULT_COMPRESSION) {
+        return YAZ0_STREAM_ERROR;
+    }
+
+    compress_configure(state, uncompressed_size, &options);
+
+    stream->total_in = 0;
+    stream->total_out = 0;
+    return YAZ0_OK;
 }
 
 size_t
