@@ -1,21 +1,22 @@
-/* compress.c: Yaz0 compressor implementation
-   Copyright (C) 2026 Jesse Gerard Brands
-
-   This file is part of libyaz0.
-
-   libyaz0 is free software: you can redistribute it and/or modify it under
-   the terms of the GNU Lesser General Public License as published by the Free
-   Software Foundation, either version 3 of the License, or (at your option)
-   any later version.
-
-   libyaz0 is distributed in the hope that it will be useful, but WITHOUT ANY
-   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-   FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
-   more details.
-
-   You should have received a copy of the GNU Lesser General Public License
-   along with libyaz0. If not, see <https://www.gnu.org/licenses/>.
-*/
+/*
+ * compress.c: Yaz0 compressor
+ * Copyright (C) 2026 Jesse Gerard Brands
+ *
+ * This file is part of libyaz0.
+ *
+ * libyaz0 is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * libyaz0 is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libyaz0. If not, see <https://www.gnu.org/licenses/>.
+ */
 
 #include <assert.h>
 #include <stdbool.h>
@@ -35,6 +36,32 @@ compress_search_distance(int level) {
     }
     int const max_search = YAZ0_MAX_DISTANCE - 1;
     return (size_t) (max_search * (level + 1)) / 10;
+}
+
+static void
+compress_configure(struct yaz0_compress_state* state, uint32_t const uncompressed_size,
+                   struct yaz0_compress_options const* options) {
+    state->mode = YAZ0_COMPRESS_HEADER;
+    state->error = YAZ0_OK;
+    state->search_distance = compress_search_distance(options->level);
+
+    state->uncompressed_size = uncompressed_size;
+    state->alignment = options->alignment;
+    memcpy(state->header_reserved, options->reserved, sizeof state->header_reserved);
+
+    state->received = 0;
+    state->window_pos = 0;
+    state->window_size = 0;
+    state->match_distance = 0;
+    state->match_length = 0;
+    state->deferred = false;
+    state->deferred_distance = 0;
+    state->deferred_length = 0;
+
+    memset(state->block, 0, sizeof state->block);
+    state->block_pos = 1;
+    state->block_out = 0;
+    state->block_tokens = 0;
 }
 
 static struct yaz0_compress_state*
@@ -80,11 +107,11 @@ static enum yaz0_step
 compress_header(struct yaz0_compress_state* state, enum yaz0_result* result) {
     struct yaz0_header header = {
         .uncompressed_size = state->uncompressed_size,
-        .alignment = 0,
-        .reserved = {0}
+        .alignment = state->alignment,
     };
 
     memcpy(&header.magic, YAZ0_MAGIC, sizeof header.magic);
+    memcpy(header.reserved, state->header_reserved, sizeof header.reserved);
 
     uint8_t header_buf[YAZ0_HEADER_SIZE];
     enum yaz0_result const header_result = yaz0_write_header(&header, header_buf, YAZ0_HEADER_SIZE);
@@ -346,9 +373,27 @@ yaz0_compress(struct yaz0_stream* stream, enum yaz0_flush const flush) {
     }
 }
 
+struct yaz0_compress_options
+yaz0_default_compress_options(void) {
+    return (struct yaz0_compress_options){
+        .level = YAZ0_DEFAULT_COMPRESSION,
+        .alignment = 0,
+        .reserved = {0},
+    };
+}
+
 enum yaz0_result
 yaz0_compress_init(struct yaz0_stream* stream, int const level,
                    uint32_t const uncompressed_size) {
+    struct yaz0_compress_options options = yaz0_default_compress_options();
+    options.level = level;
+
+    return yaz0_compress_init_with_options(stream, uncompressed_size, options);
+}
+
+enum yaz0_result
+yaz0_compress_init_with_options(struct yaz0_stream* stream, uint32_t const uncompressed_size,
+                                struct yaz0_compress_options const options) {
     if (stream == NULL) {
         return YAZ0_STREAM_ERROR;
     }
@@ -356,7 +401,8 @@ yaz0_compress_init(struct yaz0_stream* stream, int const level,
         return YAZ0_STREAM_ERROR;
     }
 
-    if ((level < YAZ0_NO_COMPRESSION || level > YAZ0_BEST_COMPRESSION) && level != YAZ0_DEFAULT_COMPRESSION) {
+    if ((options.level < YAZ0_NO_COMPRESSION || options.level > YAZ0_BEST_COMPRESSION)
+        && options.level != YAZ0_DEFAULT_COMPRESSION) {
         return YAZ0_STREAM_ERROR;
     }
 
@@ -374,22 +420,7 @@ yaz0_compress_init(struct yaz0_stream* stream, int const level,
     state->common.alloc = stream->alloc;
     state->common.free = stream->free;
 
-    state->mode = YAZ0_COMPRESS_HEADER;
-    state->search_distance = compress_search_distance(level);
-    state->uncompressed_size = uncompressed_size;
-    state->received = 0;
-    state->window_pos = 0;
-    state->window_size = 0;
-    state->match_distance = 0;
-    state->match_length = 0;
-    state->deferred = false;
-    state->deferred_distance = 0;
-    state->deferred_length = 0;
-
-    memset(state->block, 0, sizeof state->block);
-    state->block_pos = 1;
-    state->block_out = 0;
-    state->block_tokens = 0;
+    compress_configure(state, uncompressed_size, &options);
 
     return YAZ0_OK;
 }
@@ -403,4 +434,39 @@ yaz0_compress_end(struct yaz0_stream* stream) {
 
     yaz0_free(stream, stream->state);
     stream->state = NULL;
+}
+
+enum yaz0_result
+yaz0_compress_reset(struct yaz0_stream* stream, uint32_t const uncompressed_size,
+                    struct yaz0_compress_options const options) {
+    struct yaz0_compress_state* state = yaz0_get_compress_state(stream);
+    if (state == NULL) {
+        return YAZ0_STREAM_ERROR;
+    }
+
+    if ((options.level < YAZ0_NO_COMPRESSION || options.level > YAZ0_BEST_COMPRESSION)
+        && options.level != YAZ0_DEFAULT_COMPRESSION) {
+        return YAZ0_STREAM_ERROR;
+    }
+
+    compress_configure(state, uncompressed_size, &options);
+
+    stream->total_in = 0;
+    stream->total_out = 0;
+    return YAZ0_OK;
+}
+
+size_t
+yaz0_compress_bound(uint32_t const uncompressed_size) {
+    uint64_t const bound = (uint64_t) YAZ0_HEADER_SIZE
+                           + (uint64_t) uncompressed_size
+                           + ((uint64_t) uncompressed_size + 7) / 8;
+
+#if SIZE_MAX < UINT64_MAX
+    if (bound > (uint64_t) SIZE_MAX) {
+        return 0;
+    }
+#endif
+
+    return (size_t) bound;
 }

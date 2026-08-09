@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 project(libyaz0
-        VERSION 0.1.0
+        VERSION 0.2.0
         DESCRIPTION "Yaz0 compression library"
         HOMEPAGE_URL "https://github.com/jessebrands/libyaz0"
         LANGUAGES C)
@@ -15,7 +15,8 @@ option(YAZ0_BUILD_TESTS "Enable building the testing suite" ${PROJECT_IS_TOP_LEV
 option(YAZ0_INSTALL "Enable installation of libyaz0" ${PROJECT_IS_TOP_LEVEL})
 
 set(YAZ0_PUBLIC_HEADERS
-        include/yaz0/yaz0.h)
+        include/yaz0/yaz0.h
+        ${CMAKE_CURRENT_BINARY_DIR}/include/yaz0/config.h)
 
 set(YAZ0_PRIVATE_HEADERS
         src/common.h
@@ -32,6 +33,11 @@ set(YAZ0_SOURCES
         src/search.c
         src/stream.c)
 
+configure_file(
+        include/yaz0/config.h.in
+        ${CMAKE_CURRENT_BINARY_DIR}/include/yaz0/config.h
+        @ONLY)
+
 if (YAZ0_BUILD_SHARED)
     add_library(yaz0 SHARED
             ${YAZ0_SOURCES}
@@ -41,6 +47,7 @@ if (YAZ0_BUILD_SHARED)
     add_library(yaz0::yaz0 ALIAS yaz0)
 
     target_include_directories(yaz0
+            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
             PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
             PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
@@ -70,6 +77,7 @@ if (YAZ0_BUILD_STATIC OR YAZ0_BUILD_TESTS)
     add_library(yaz0::yaz0_static ALIAS yaz0_static)
 
     target_include_directories(yaz0_static
+            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
             PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
             PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 

@@ -1,3 +1,31 @@
+Version 0.2.0 -- 2026-08-09
+
+    This version adds several utility functions.
+
+  Features
+
+    * The compression can now be initialized with values for alignment hint and
+      the reserved bytes in the Yaz0 header.
+    * Runtime version query functions.
+
+  Improvements
+
+    * Added a reset function for the compressor and decompressor.
+    * Added a function to get human readable descriptions of result codes.
+    * Added a utility function to calculate upper bound compressed size.
+
+
+Version 0.1.1 -- 2026-08-09
+
+    Documentation improvements and minor bugs.
+
+  Improvements
+
+    * Added a configuration header with version macros.
+    * The public header is now documented.
+    * Removed an implicit conversion.
+
+
 Version 0.1.0 -- 2026-07-31
 
     First public release.

@@ -1,6 +1,8 @@
 /*
- * search.h: longest substring match search
+ * config.h: libyaz0 configuration
  * Copyright (C) 2026 Jesse Gerard Brands
+ *
+ * !!!! THIS FILE IS GENERATED AUTOMATICALLY, DO NOT EDIT !!!!
  *
  * This file is part of libyaz0.
  *
@@ -18,13 +20,18 @@
  * along with libyaz0. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBYAZ0_SEARCH_H
-#define LIBYAZ0_SEARCH_H
+#ifndef LIBYAZ0_CONFIG_H
+#define LIBYAZ0_CONFIG_H
 
-#include <stddef.h>
-#include <stdint.h>
+#define YAZ0_MAKE_VERSION(major, minor, patch)                                \
+      ((((major) & 0x7FFF) << 16)                                             \
+    |  (((minor) & 0xFF)   << 8)                                              \
+    |   ((patch) & 0xFF))
 
-size_t
-yaz0_search(uint8_t const* data, size_t start_pos, size_t offset, size_t max_lookahead, size_t* match_pos);
+#define YAZ0_VERSION_STRING "@PROJECT_VERSION@"
+#define YAZ0_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define YAZ0_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define YAZ0_VERSION_PATCH @PROJECT_VERSION_PATCH@
+#define YAZ0_VERSION YAZ0_MAKE_VERSION(YAZ0_VERSION_MAJOR, YAZ0_VERSION_MINOR, YAZ0_VERSION_PATCH)
 
-#endif //LIBYAZ0_SEARCH_H
+#endif //LIBYAZ0_CONFIG_H

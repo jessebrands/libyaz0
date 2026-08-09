@@ -1,21 +1,22 @@
-/* decompress.c: Yaz0 decompressor implementation
-   Copyright (C) 2026 Jesse Gerard Brands
-
-   This file is part of libyaz0.
-
-   libyaz0 is free software: you can redistribute it and/or modify it under
-   the terms of the GNU Lesser General Public License as published by the Free
-   Software Foundation, either version 3 of the License, or (at your option)
-   any later version.
-
-   libyaz0 is distributed in the hope that it will be useful, but WITHOUT ANY
-   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-   FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
-   more details.
-
-   You should have received a copy of the GNU Lesser General Public License
-   along with libyaz0. If not, see <https://www.gnu.org/licenses/>.
-*/
+/*
+ * decompress.c: Yaz0 decompressor
+ * Copyright (C) 2026 Jesse Gerard Brands
+ *
+ * This file is part of libyaz0.
+ *
+ * libyaz0 is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * libyaz0 is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libyaz0. If not, see <https://www.gnu.org/licenses/>.
+ */
 
 #include <assert.h>
 #include <stdbool.h>
@@ -37,6 +38,19 @@ yaz0_get_decompress_state(struct yaz0_stream const* stream) {
     }
 
     return state;
+}
+
+static void
+decompress_configure(struct yaz0_decompress_state* state) {
+    state->mode = YAZ0_DECOMPRESS_HEADER;
+    state->error = YAZ0_OK;
+    state->history_pos = 0;
+    state->remaining = 0;
+    state->group_bitmask = 0;
+    state->group_remaining = 0;
+    state->reference_pos = 0;
+    state->copy_distance = 0;
+    state->copy_length = 0;
 }
 
 static enum yaz0_step
@@ -118,13 +132,13 @@ decompress_token(struct yaz0_decompress_state* state, enum yaz0_result* result) 
     }
 
     bool const literal = state->group_bitmask & 0x80;
-    state->group_bitmask <<= 1;
+    state->group_bitmask = (uint8_t) (state->group_bitmask << 1);
     state->group_remaining--;
     state->reference_pos = 0;
 
     enum yaz0_decompress_mode const next_mode = literal
-                                              ? YAZ0_DECOMPRESS_LITERAL
-                                              : YAZ0_DECOMPRESS_REFERENCE;
+                                                    ? YAZ0_DECOMPRESS_LITERAL
+                                                    : YAZ0_DECOMPRESS_REFERENCE;
 
     return decompress_continue(state, next_mode, result);
 }
@@ -291,15 +305,7 @@ yaz0_decompress_init(struct yaz0_stream* stream) {
     state->common.alloc = stream->alloc;
     state->common.free = stream->free;
 
-    // Set the initial decompressor state.
-    state->mode = YAZ0_DECOMPRESS_HEADER;
-    state->history_pos = 0;
-    state->remaining = 0;
-    state->group_bitmask = 0;
-    state->group_remaining = 0;
-    state->reference_pos = 0;
-    state->copy_distance = 0;
-    state->copy_length = 0;
+    decompress_configure(state);
 
     return YAZ0_OK;
 }
@@ -313,4 +319,18 @@ yaz0_decompress_end(struct yaz0_stream* stream) {
 
     yaz0_free(stream, stream->state);
     stream->state = NULL;
+}
+
+enum yaz0_result
+yaz0_decompress_reset(struct yaz0_stream* stream) {
+    struct yaz0_decompress_state* state = yaz0_get_decompress_state(stream);
+    if (state == NULL) {
+        return YAZ0_STREAM_ERROR;
+    }
+
+    decompress_configure(state);
+
+    stream->total_in = 0;
+    stream->total_out = 0;
+    return YAZ0_OK;
 }

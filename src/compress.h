@@ -1,21 +1,22 @@
-/* compress.h: internal compression API
-   Copyright (C) 2026 Jesse Gerard Brands
-
-   This file is part of libyaz0.
-
-   libyaz0 is free software: you can redistribute it and/or modify it under
-   the terms of the GNU Lesser General Public License as published by the Free
-   Software Foundation, either version 3 of the License, or (at your option)
-   any later version.
-
-   libyaz0 is distributed in the hope that it will be useful, but WITHOUT ANY
-   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-   FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for
-   more details.
-
-   You should have received a copy of the GNU Lesser General Public License
-   along with libyaz0. If not, see <https://www.gnu.org/licenses/>.
-*/
+/*
+ * compress.h: Yaz0 compressor
+ * Copyright (C) 2026 Jesse Gerard Brands
+ *
+ * This file is part of libyaz0.
+ *
+ * libyaz0 is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * libyaz0 is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with libyaz0. If not, see <https://www.gnu.org/licenses/>.
+ */
 
 #ifndef LIBYAZ0_COMPRESS_H
 #define LIBYAZ0_COMPRESS_H
@@ -41,6 +42,8 @@ struct yaz0_compress_state {
 
    size_t search_distance;
    uint32_t uncompressed_size;
+   uint32_t alignment;
+   uint8_t header_reserved[4];
    size_t received;
 
    uint8_t window[YAZ0_MAX_DISTANCE * 2 + YAZ0_MAX_MATCH];
