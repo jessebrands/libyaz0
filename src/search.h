@@ -25,6 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "common.h"
 #include "yaz0/yaz0.h"
 
 /*!
@@ -46,6 +47,15 @@ yaz0_length_scalar(uint8_t const* a, uint8_t const* b, size_t max_lookahead);
 size_t
 yaz0_search_scalar(uint8_t const* data, size_t start_pos, size_t offset,
                    size_t max_lookahead, size_t* match_pos);
+
+#if YAZ0_TARGET_X86
+size_t
+yaz0_search_sse2(uint8_t const* data, size_t start_pos, size_t offset,
+                 size_t max_lookahead, size_t* match_pos);
+#endif
+
+bool
+yaz0_search_sse2_supported(void);
 
 struct yaz0_search_impl const*
 yaz0_search_select(enum yaz0_search search);

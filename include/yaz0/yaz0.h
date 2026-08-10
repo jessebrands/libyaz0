@@ -137,6 +137,9 @@ enum yaz0_search {
 
     //! Fast, portable scalar implementation available on all hardware.
     YAZ0_SEARCH_SCALAR = 1,
+
+    //! Very fast vectorized searching using SSE2
+    YAZ0_SEARCH_SSE2 = 2,
 };
 
 /*!

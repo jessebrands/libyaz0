@@ -5,6 +5,8 @@ project(libyaz0
         HOMEPAGE_URL "https://github.com/jessebrands/libyaz0"
         LANGUAGES C)
 
+include(CheckCCompilerFlag)
+
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
@@ -31,7 +33,13 @@ set(YAZ0_SOURCES
         src/compress.c
         src/decompress.c
         src/search.c
+        src/search_sse2.c
         src/stream.c)
+
+check_c_compiler_flag("-msse2" YAZ0_HAVE_MSSE2_FLAG)
+if (YAZ0_HAVE_MSSE2_FLAG)
+    set_source_files_properties(src/search_sse2.c PROPERTIES COMPILE_OPTIONS "-msse2")
+endif ()
 
 configure_file(
         include/yaz0/config.h.in

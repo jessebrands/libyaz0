@@ -88,6 +88,9 @@ yaz0_search_scalar_supported(void) {
 }
 
 static struct yaz0_search_impl const implementations[] = {
+#if YAZ0_TARGET_X86
+    {YAZ0_SEARCH_SSE2, "sse2", yaz0_search_sse2, yaz0_search_sse2_supported},
+#endif
     {YAZ0_SEARCH_SCALAR, "scalar", yaz0_search_scalar, yaz0_search_scalar_supported},
 };
 
