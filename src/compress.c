@@ -167,7 +167,7 @@ compress_fill(struct yaz0_compress_state* state, enum yaz0_flush const flush, en
     compress_slide_window(state);
 
     size_t const min_lookahead = (flush == YAZ0_FINISH) ? 1 : (YAZ0_MAX_MATCH + 1);
-    size_t const want = sizeof state->window - state->window_size;
+    size_t const want = YAZ0_WINDOW_SIZE  - state->window_size;
     uint8_t* out = &state->window[state->window_size];
 
     size_t const bytes_in = yaz0_stream_read(state->common.stream, out, want);

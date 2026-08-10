@@ -48,7 +48,9 @@ struct yaz0_compress_state {
    uint8_t header_reserved[4];
    size_t received;
 
-   uint8_t window[YAZ0_MAX_DISTANCE * 2 + YAZ0_MAX_MATCH];
+   //! Sliding window. The padding is there to ensure vectorized
+   //! implementations never over-read past the end of the window.
+   uint8_t window[YAZ0_WINDOW_SIZE + YAZ0_WINDOW_PADDING];
    size_t window_pos;
    size_t window_size;
 
