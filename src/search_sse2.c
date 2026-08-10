@@ -102,22 +102,23 @@ yaz0_search_sse2(uint8_t const* data, size_t const start_pos,
 
     // Every candidate must at minimum match the first byte at the offset.
     __m128i const first = _mm_set1_epi8((char) data[offset]);
+    __m128i want = _mm_setzero_si128();
 
-    for (size_t i = start_pos; i < offset;) {
-        size_t const remaining = offset - i;
-        size_t const lanes = remaining < 16 ? remaining : 16;
-        uint32_t const valid = (uint32_t) ((1u << lanes) - 1u);
-
+    for (size_t i = start_pos; i < offset; i += 16) {
         __m128i const head = _mm_loadu_si128((__m128i const*) &data[i]);
-        uint32_t mask = (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(head, first)) & valid;
+        uint32_t mask = (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(head, first));
 
         // A match can only be beaten if the byte after the longest run matches
         // too. Testing both bytes together rejects nearly every candidate
         // without ever counting one.
         if (longest_run > 0) {
-            __m128i const want = _mm_set1_epi8((char) data[offset + longest_run]);
             __m128i const tail = _mm_loadu_si128((__m128i const*) &data[i + longest_run]);
             mask &= (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(tail, want));
+        }
+
+        size_t const remaining = offset - i;
+        if (remaining < 16) {
+            mask &= (uint32_t) ((1u << remaining) - 1u);
         }
 
         // Bit k is the candidate at data[i + k], so taking the lowest set bit
@@ -134,10 +135,10 @@ yaz0_search_sse2(uint8_t const* data, size_t const start_pos,
                 if (run_length == max_lookahead) {
                     return longest_run;
                 }
+
+                want = _mm_set1_epi8((char) data[offset + longest_run]);
             }
         }
-
-        i += lanes;
     }
 
     return longest_run;
