@@ -91,6 +91,9 @@ enum yaz0_result {
     //! The stream has ended without errors, but has not written or read the
     //! expected amount of bytes.
     YAZ0_SIZE_MISMATCH = -8,
+
+    //! The selected option is unsupported.
+    YAZ0_UNSUPPORTED = -9,
 };
 
 /*!
@@ -126,6 +129,17 @@ enum yaz0_level {
 };
 
 /*!
+ * Search algorithm selection.
+ */
+enum yaz0_search {
+    //! Let the library pick the fastest implementation available.
+    YAZ0_SEARCH_AUTO = 0,
+
+    //! Fast, portable scalar implementation available on all hardware.
+    YAZ0_SEARCH_SCALAR = 1,
+};
+
+/*!
  * \brief Options that can be passed to the compressor.
  * \see yaz0_compress_init_with_options
  */
@@ -138,6 +152,9 @@ struct yaz0_compress_options {
 
     //! Value for the reserved bytes, copied into the header.
     uint8_t reserved[4];
+
+    //! Search algorithm.
+    enum yaz0_search search;
 };
 
 /*!

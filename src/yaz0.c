@@ -81,6 +81,7 @@ yaz0_result_name(enum yaz0_result const result) {
         case YAZ0_TRUNCATED: return "YAZ0_TRUNCATED";
         case YAZ0_BAD_HEADER: return "YAZ0_BAD_HEADER";
         case YAZ0_SIZE_MISMATCH: return "YAZ0_SIZE_MISMATCH";
+        case YAZ0_UNSUPPORTED: return "YAZ0_UNSUPPORTED";
     }
 
     return "<invalid value>";
@@ -98,6 +99,7 @@ char const* yaz0_result_string(enum yaz0_result result) {
         case YAZ0_TRUNCATED: return "input ended unexpectedly";
         case YAZ0_BAD_HEADER: return "not a Yaz0 stream";
         case YAZ0_SIZE_MISMATCH: return "data does not match declared size";
+        case YAZ0_UNSUPPORTED: return "the selected option is unsupported";
     }
 
     return "unknown";
