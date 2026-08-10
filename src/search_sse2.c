@@ -71,6 +71,26 @@ yaz0_ctz32(uint32_t const mask) {
 #endif
 }
 
+static inline size_t
+yaz0_length_sse2(uint8_t const* a, uint8_t const* b, size_t const max_lookahead) {
+    size_t i = 0;
+    while (max_lookahead - i >= 16) {
+        __m128i const x = _mm_loadu_si128((__m128i const*) (a + i));
+        __m128i const y = _mm_loadu_si128((__m128i const*) (b + i));
+        uint32_t const diff = (~(uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(x, y))) & 0xFFFFu;
+        if (diff != 0) {
+            return i + yaz0_ctz32(diff);
+        }
+        i += 16;
+    }
+
+    while (i < max_lookahead && a[i] == b[i]) {
+        ++i;
+    }
+
+    return i;
+}
+
 size_t
 yaz0_search_sse2(uint8_t const* data, size_t const start_pos,
                  size_t const offset, size_t const max_lookahead, size_t* match_pos) {
@@ -106,7 +126,7 @@ yaz0_search_sse2(uint8_t const* data, size_t const start_pos,
             size_t const pos = i + yaz0_ctz32(mask);
             mask &= mask - 1;
 
-            size_t const run_length = yaz0_length_scalar(&data[pos], &data[offset], max_lookahead);
+            size_t const run_length = yaz0_length_sse2(&data[pos], &data[offset], max_lookahead);
             if (run_length > longest_run) {
                 *match_pos = pos;
                 longest_run = run_length;
