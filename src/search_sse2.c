@@ -104,7 +104,11 @@ yaz0_search_sse2(uint8_t const* data, size_t const start_pos,
     __m128i const first = _mm_set1_epi8((char) data[offset]);
     __m128i want = _mm_setzero_si128();
 
-    for (size_t i = start_pos; i < offset; i += 16) {
+    // Fewer than sixteen candidates cannot fill a block.
+    size_t const tail_start = offset - ((offset - start_pos) & (size_t) 15);
+
+    size_t i = start_pos;
+    for (; i < tail_start; i += 16) {
         __m128i const head = _mm_loadu_si128((__m128i const*) &data[i]);
         uint32_t mask = (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(head, first));
 
@@ -114,11 +118,6 @@ yaz0_search_sse2(uint8_t const* data, size_t const start_pos,
         if (longest_run > 0) {
             __m128i const tail = _mm_loadu_si128((__m128i const*) &data[i + longest_run]);
             mask &= (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(tail, want));
-        }
-
-        size_t const remaining = offset - i;
-        if (remaining < 16) {
-            mask &= (uint32_t) ((1u << remaining) - 1u);
         }
 
         // Bit k is the candidate at data[i + k], so taking the lowest set bit
@@ -137,6 +136,25 @@ yaz0_search_sse2(uint8_t const* data, size_t const start_pos,
                 }
 
                 want = _mm_set1_epi8((char) data[offset + longest_run]);
+            }
+        }
+    }
+
+    for (; i < offset; ++i) {
+        if (data[i] != data[offset]) {
+            continue;
+        }
+        if (longest_run > 0 && data[i + longest_run] != data[offset + longest_run]) {
+            continue;
+        }
+
+        size_t const run_length = yaz0_length_sse2(&data[i], &data[offset], max_lookahead);
+        if (run_length > longest_run) {
+            *match_pos = i;
+            longest_run = run_length;
+
+            if (run_length == max_lookahead) {
+                return longest_run;
             }
         }
     }
