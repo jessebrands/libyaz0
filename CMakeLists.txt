@@ -5,6 +5,8 @@ project(libyaz0
         HOMEPAGE_URL "https://github.com/jessebrands/libyaz0"
         LANGUAGES C)
 
+include(CheckCCompilerFlag)
+
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
@@ -13,6 +15,8 @@ option(YAZ0_BUILD_SHARED "Enable building libyaz0 as shared library" ON)
 option(YAZ0_BUILD_STATIC "Enable building libyaz0 as static library" ON)
 option(YAZ0_BUILD_TESTS "Enable building the testing suite" ${PROJECT_IS_TOP_LEVEL})
 option(YAZ0_INSTALL "Enable installation of libyaz0" ${PROJECT_IS_TOP_LEVEL})
+
+option(YAZ0_ENABLE_SSE2 "Enable the SSE2 search implementation on x86" ON)
 
 set(YAZ0_PUBLIC_HEADERS
         include/yaz0/yaz0.h
@@ -31,7 +35,15 @@ set(YAZ0_SOURCES
         src/compress.c
         src/decompress.c
         src/search.c
+        src/search_sse2.c
         src/stream.c)
+
+if (YAZ0_ENABLE_SSE2)
+    check_c_compiler_flag("-msse2" YAZ0_HAVE_MSSE2_FLAG)
+    if (YAZ0_HAVE_MSSE2_FLAG)
+        set_source_files_properties(src/search_sse2.c PROPERTIES COMPILE_OPTIONS "-msse2")
+    endif ()
+endif ()
 
 configure_file(
         include/yaz0/config.h.in
@@ -66,6 +78,10 @@ if (YAZ0_BUILD_SHARED)
     else ()
         target_compile_options(yaz0 PRIVATE -Wall -Wextra -Wconversion)
     endif ()
+
+    if (NOT YAZ0_ENABLE_SSE2)
+        target_compile_definitions(yaz0 PRIVATE YAZ0_DISABLE_SSE2)
+    endif ()
 endif ()
 
 if (YAZ0_BUILD_STATIC OR YAZ0_BUILD_TESTS)
@@ -92,6 +108,10 @@ if (YAZ0_BUILD_STATIC OR YAZ0_BUILD_TESTS)
         target_compile_options(yaz0_static PRIVATE /W4)
     else ()
         target_compile_options(yaz0_static PRIVATE -Wall -Wextra -Wconversion)
+    endif ()
+
+    if (NOT YAZ0_ENABLE_SSE2)
+        target_compile_definitions(yaz0_static PRIVATE YAZ0_DISABLE_SSE2)
     endif ()
 endif ()
 
