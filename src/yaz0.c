@@ -114,3 +114,14 @@ char const*
 yaz0_version_string(void) {
     return YAZ0_VERSION_STRING;
 }
+
+char const*
+yaz0_search_name(enum yaz0_search const search) {
+    switch (search) {
+        case YAZ0_SEARCH_AUTO: return "auto";
+        case YAZ0_SEARCH_SCALAR: return "scalar";
+        case YAZ0_SEARCH_SSE2: return "sse2";
+    }
+
+    return "<invalid value>";
+}

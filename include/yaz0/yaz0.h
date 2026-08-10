@@ -293,6 +293,16 @@ yaz0_compress_reset(struct yaz0_stream* stream, uint32_t uncompressed_size,
                     struct yaz0_compress_options options);
 
 /*!
+ * \brief Returns the search implementation a compression stream is using.
+ * \param stream Pointer to a compression stream.
+ * \return The resolved implementation.
+ * \note Calling this function on a stream that isn't a compression stream is
+ *       undefined behavior.
+ */
+YAZ0_API enum yaz0_search
+yaz0_compress_search(struct yaz0_stream const* stream);
+
+/*!
  * \brief Returns the worst-case compression scenario size.
  * \param uncompressed_size Uncompressed size in bytes.
  * \return Compressed size in the worst-case scenario.
@@ -387,6 +397,21 @@ yaz0_version(void);
  */
 YAZ0_API char const*
 yaz0_version_string(void);
+
+/*!
+ * \brief Returns the default search implementation.
+ * \return The implementation this host defaults to.
+ */
+YAZ0_API enum yaz0_search
+yaz0_default_search(void);
+
+/*!
+ * \brief Returns a human-readable name for a search implementation.
+ * \param search Search implementation.
+ * \return Null-terminated string.
+ */
+YAZ0_API char const*
+yaz0_search_name(enum yaz0_search search);
 
 #if defined __cplusplus
 }

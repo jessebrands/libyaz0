@@ -473,6 +473,16 @@ yaz0_compress_reset(struct yaz0_stream* stream, uint32_t const uncompressed_size
     return YAZ0_OK;
 }
 
+enum yaz0_search
+yaz0_compress_search(struct yaz0_stream const* stream) {
+    struct yaz0_compress_state const* state = yaz0_get_compress_state(stream);
+    if (state == NULL) {
+        return YAZ0_SEARCH_AUTO;
+    }
+
+    return state->search->id;
+}
+
 size_t
 yaz0_compress_bound(uint32_t const uncompressed_size) {
     uint64_t const bound = (uint64_t) YAZ0_HEADER_SIZE

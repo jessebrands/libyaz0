@@ -116,3 +116,9 @@ yaz0_search_select(enum yaz0_search const search) {
 
     return NULL;
 }
+
+enum yaz0_search
+yaz0_default_search(void) {
+    struct yaz0_search_impl const* const impl = yaz0_search_select(YAZ0_SEARCH_AUTO);
+    return impl != NULL ? impl->id : YAZ0_SEARCH_SCALAR;
+}
