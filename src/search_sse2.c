@@ -18,15 +18,17 @@
  * along with libyaz0. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#if defined _MSC_VER
-#include <intrin.h>
-#else
-#include <cpuid.h>
-#endif
-
 #include <assert.h>
 
 #include "search.h"
+
+#if YAZ0_HAVE_SSE2
+#  if defined _MSC_VER
+#    include <intrin.h>
+#  else
+#    include <cpuid.h>
+#  endif
+#endif
 
 bool
 yaz0_search_sse2_supported(void) {
