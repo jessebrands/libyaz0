@@ -30,7 +30,7 @@
 
 bool
 yaz0_search_sse2_supported(void) {
-#if !YAZ0_TARGET_X86
+#if !YAZ0_HAVE_SSE2
     return false;
 #elif defined __x86_64__ || defined _M_X64
     return true;
@@ -47,7 +47,7 @@ yaz0_search_sse2_supported(void) {
 #endif
 }
 
-#if YAZ0_TARGET_X86
+#if YAZ0_HAVE_SSE2
 
 #include <emmintrin.h>
 
@@ -121,4 +121,4 @@ yaz0_search_sse2(uint8_t const* data, size_t const start_pos,
     return longest_run;
 }
 
-#endif // YAZ0_TARGET_X86
+#endif // YAZ0_HAVE_SSE2

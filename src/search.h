@@ -48,7 +48,7 @@ size_t
 yaz0_search_scalar(uint8_t const* data, size_t start_pos, size_t offset,
                    size_t max_lookahead, size_t* match_pos);
 
-#if YAZ0_TARGET_X86
+#if YAZ0_HAVE_SSE2
 size_t
 yaz0_search_sse2(uint8_t const* data, size_t start_pos, size_t offset,
                  size_t max_lookahead, size_t* match_pos);

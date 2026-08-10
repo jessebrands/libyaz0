@@ -31,6 +31,12 @@
 #  define YAZ0_TARGET_X86 0
 #endif
 
+#if YAZ0_TARGET_X86 && !defined YAZ0_DISABLE_SSE2
+#  define YAZ0_HAVE_SSE2 1
+#else
+#  define YAZ0_HAVE_SSE2 0
+#endif
+
 #define YAZ0_MAGIC "Yaz0"
 #define YAZ0_HEADER_SIZE 16
 #define YAZ0_MAX_DISTANCE 4096
