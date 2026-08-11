@@ -143,6 +143,15 @@ enum yaz0_search {
 
     //! Very fast vectorized search using SSE2
     YAZ0_SEARCH_SSE2 = 3,
+
+    //! Vectorized search using AVX2 instructions (unimplemented)
+    YAZ0_SEARCH_AVX2 = 4,
+
+    //! Vectorized search using AVX512 instructions (unimplemented)
+    YAZ0_SEARCH_AVX512 = 5,
+
+    //! Vectorized search using ARM NEON instructions (unimplemented)
+    YAZ0_SEARCH_NEON = 6,
 };
 
 /*!

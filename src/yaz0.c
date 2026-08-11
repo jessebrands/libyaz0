@@ -122,6 +122,9 @@ yaz0_search_name(enum yaz0_search const search) {
         case YAZ0_SEARCH_REFERENCE: return "reference";
         case YAZ0_SEARCH_SCALAR: return "scalar";
         case YAZ0_SEARCH_SSE2: return "sse2";
+        case YAZ0_SEARCH_AVX2: return "avx2";
+        case YAZ0_SEARCH_AVX512: return "avx512";
+        case YAZ0_SEARCH_NEON: return "neon";
     }
 
     return "<invalid value>";
