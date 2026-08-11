@@ -58,6 +58,14 @@ if (YAZ0_ENABLE_AVX2)
     endif ()
 endif ()
 
+set(YAZ0_SIMD_DEFINITIONS)
+if (NOT YAZ0_ENABLE_SSE2)
+    list(APPEND YAZ0_SIMD_DEFINITIONS YAZ0_DISABLE_SSE2)
+endif ()
+if (NOT YAZ0_ENABLE_AVX2)
+    list(APPEND YAZ0_SIMD_DEFINITIONS YAZ0_DISABLE_AVX2)
+endif ()
+
 configure_file(
         include/yaz0/config.h.in
         ${CMAKE_CURRENT_BINARY_DIR}/include/yaz0/config.h
@@ -92,14 +100,13 @@ if (YAZ0_BUILD_SHARED)
             VERSION ${PROJECT_VERSION}
             SOVERSION "${PROJECT_VERSION_MAJOR}")
 
-    target_compile_definitions(yaz0 PRIVATE YAZ0_SHARED)
+    target_compile_definitions(yaz0
+            PRIVATE YAZ0_SHARED
+            PRIVATE ${YAZ0_SIMD_DEFINITIONS})
+
     set_target_properties(yaz0 PROPERTIES C_VISIBILITY_PRESET hidden)
     target_compile_features(yaz0 PUBLIC c_std_99)
     target_compile_options(yaz0 PRIVATE ${YAZ0_WARNING_FLAGS})
-
-    if (NOT YAZ0_ENABLE_SSE2)
-        target_compile_definitions(yaz0 PRIVATE YAZ0_DISABLE_SSE2)
-    endif ()
 endif ()
 
 if (YAZ0_BUILD_STATIC OR YAZ0_BUILD_TESTS)
@@ -123,13 +130,12 @@ if (YAZ0_BUILD_STATIC OR YAZ0_BUILD_TESTS)
         set_target_properties(yaz0_static PROPERTIES OUTPUT_NAME "yaz0")
     endif ()
 
-    target_compile_definitions(yaz0_static PUBLIC YAZ0_STATIC)
+    target_compile_definitions(yaz0_static
+            PUBLIC YAZ0_STATIC
+            PRIVATE ${YAZ0_SIMD_DEFINITIONS})
+
     target_compile_features(yaz0_static PUBLIC c_std_99)
     target_compile_options(yaz0_static PRIVATE ${YAZ0_WARNING_FLAGS})
-
-    if (NOT YAZ0_ENABLE_SSE2)
-        target_compile_definitions(yaz0_static PRIVATE YAZ0_DISABLE_SSE2)
-    endif ()
 endif ()
 
 if (YAZ0_BUILD_TESTS)

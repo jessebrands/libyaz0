@@ -117,6 +117,8 @@ yaz0_ctz32(uint32_t const mask) {
 #endif
 }
 
+#if YAZ0_HAVE_AVX2
+
 static inline size_t
 yaz0_length_avx2(uint8_t const* a, uint8_t const* b, size_t const max_lookahead) {
     size_t i = 0;
@@ -206,3 +208,5 @@ yaz0_search_avx2(uint8_t const* data, size_t const start_pos,
 
     return (longest_run >= YAZ0_MIN_MATCH) ? longest_run : 0;
 }
+
+#endif
