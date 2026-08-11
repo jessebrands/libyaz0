@@ -20,11 +20,18 @@
 #if defined _WIN32
 #  include <windows.h>
 
-static double bench_now(void) {
-    LARGE_INTEGER freq, now;
-    QueryPerformanceFrequency(&freq);
+static double
+bench_now(void) {
+    static double period = 0.0;
+    if (period == 0.0) {
+        LARGE_INTEGER freq;
+        QueryPerformanceFrequency(&freq);
+        period = 1.0 / (double) freq.QuadPart;
+    }
+
+    LARGE_INTEGER now;
     QueryPerformanceCounter(&now);
-    return (double) now.QuadPart / (double) freq.QuadPart;
+    return (double) now.QuadPart * period;
 }
 #else
 #  define _POSIX_C_SOURCE 199309L
@@ -36,14 +43,27 @@ static double bench_now(void) {
 }
 #endif
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "yaz0/yaz0.h"
 #include "test_corpus.h"
 
 #define BENCHMARK_BUDGET       2.5
 #define BENCHMARK_PAYLOAD_SIZE (256 * 1024)
+#define BENCHMARK_MIN_ROUNDS   5
+#define BENCHMARK_MAX_IMPLS    8
+
+static enum yaz0_search const benchmark_searches[] = {
+    YAZ0_SEARCH_SCALAR,
+    YAZ0_SEARCH_SSE2,
+    YAZ0_SEARCH_AVX2,
+    YAZ0_SEARCH_AVX512,
+    YAZ0_SEARCH_NEON,
+    YAZ0_SEARCH_SIMD128,
+};
 
 struct benchmark {
     int level;
@@ -55,119 +75,215 @@ struct benchmark {
     double elapsed;
 };
 
+struct benchmark_impl {
+    enum yaz0_search search;
+    struct yaz0_stream stream;
+    size_t produced;
+    double best;
+};
+
+static bool
+bench_impl_init(struct benchmark_impl* impl, enum yaz0_search const search,
+                uint32_t const src_size, int const level) {
+    struct yaz0_compress_options options = yaz0_default_compress_options();
+    options.level = level;
+    options.search = search;
+
+    *impl = (struct benchmark_impl){.search = search, .best = -1.0};
+
+    return yaz0_compress_init_with_options(&impl->stream, src_size, options) == YAZ0_OK;
+}
+
 static size_t
-bench_run_compress(uint8_t const* src, size_t const src_size,
+bench_run_compress(struct benchmark_impl* impl, uint8_t const* src, size_t const src_size,
                    uint8_t* dst, size_t const dst_size, int const level) {
-    struct yaz0_stream stream = {0};
-    if (yaz0_compress_init(&stream, level, (uint32_t) src_size) != YAZ0_OK) {
+    struct yaz0_compress_options options = yaz0_default_compress_options();
+    options.level = level;
+    options.search = impl->search;
+
+    if (yaz0_compress_reset(&impl->stream, (uint32_t) src_size, options) != YAZ0_OK) {
         return 0;
     }
 
-    stream.next_in = src;
-    stream.avail_in = src_size;
-    stream.next_out = dst;
-    stream.avail_out = dst_size;
+    impl->stream.next_in = src;
+    impl->stream.avail_in = src_size;
+    impl->stream.next_out = dst;
+    impl->stream.avail_out = dst_size;
 
     enum yaz0_result result;
     do {
-        result = yaz0_compress(&stream, YAZ0_FINISH);
+        result = yaz0_compress(&impl->stream, YAZ0_FINISH);
     } while (result == YAZ0_OK);
 
-    size_t const produced = stream.total_out;
-    yaz0_compress_end(&stream);
-
-    return result == YAZ0_STREAM_END ? produced : 0;
+    return result == YAZ0_STREAM_END ? impl->stream.total_out : 0;
 }
 
-static double
-bench_measure(struct benchmark* bench,
+static bool
+bench_measure(struct benchmark_impl* impls, size_t const count,
               uint8_t const* src, size_t const src_size,
-              uint8_t* dst, size_t const dst_size) {
-    size_t const expected = bench_run_compress(src, src_size, dst, dst_size, bench->level);
-    if (expected == 0) {
-        return -1.0;
+              uint8_t* dst, size_t const dst_size, uint8_t* golden,
+              int const level, double const budget, size_t* rounds) {
+    // Do an initial run to warm up caches and verify the algorithm.
+    for (size_t i = 0; i < count; ++i) {
+        size_t const produced = bench_run_compress(&impls[i], src, src_size, dst, dst_size, level);
+        if (produced == 0) {
+            return false;
+        }
+        impls[i].produced = produced;
+
+        if (i == 0) {
+            memcpy(golden, dst, produced);
+        } else if (produced != impls[0].produced || memcmp(golden, dst, produced) != 0) {
+            fprintf(stderr, "error: %s output differs from %s\n",
+                    yaz0_search_name(impls[i].search), yaz0_search_name(impls[0].search));
+            return false;
+        }
     }
 
-    double best = -1.0;
     double const start = bench_now();
+    *rounds = 0;
 
+    // We run over our search implementations in interleaving order to ensure
+    // instructions aren't cached beyond what we expect.
     do {
-        double const t0 = bench_now();
-        size_t const produced = bench_run_compress(src, src_size, dst, dst_size, bench->level);
-        double const elapsed = bench_now() - t0;
+        for (size_t i = 0; i < count; ++i) {
+            double const t0 = bench_now();
+            size_t const produced = bench_run_compress(&impls[i], src, src_size, dst, dst_size, level);
+            double const elapsed = bench_now() - t0;
 
-        if (produced != expected) {
-            return -1.0;
+            if (produced != impls[i].produced) {
+                return false;
+            }
+            if (impls[i].best < 0.0 || elapsed < impls[i].best) {
+                impls[i].best = elapsed;
+            }
         }
-        if (best < 0.0 || elapsed < best) {
-            best = elapsed;
-        }
+        ++(*rounds);
+    } while (*rounds < BENCHMARK_MIN_ROUNDS || bench_now() - start < budget);
 
-        bench->iterations++;
-    } while (bench_now() - start < BENCHMARK_BUDGET);
-    double const end = bench_now();
-
-    bench->compressed = expected;
-    bench->ratio = (double) expected / (double) src_size;
-    bench->elapsed = end - start;
-    return best;
+    return true;
 }
 
 static void
-bench_compress(struct benchmark* bench) {
+bench_compress(enum corpus_profile const profile, int const level,
+               double const budget, bool const use_reference) {
+    size_t const out_size = yaz0_compress_bound(BENCHMARK_PAYLOAD_SIZE);
+
     uint8_t* data = malloc(BENCHMARK_PAYLOAD_SIZE);
-    if (data == NULL) {
-        return;
-    }
-
-    corpus_generate(data, BENCHMARK_PAYLOAD_SIZE, bench->profile, 0x4D697865);
-
-    size_t const out_size = 16 + BENCHMARK_PAYLOAD_SIZE + (BENCHMARK_PAYLOAD_SIZE + 7) / 8;
     uint8_t* out = malloc(out_size);
-    if (out == NULL) {
-        free(data);
-        return;
+    uint8_t* golden = malloc(out_size);
+
+    if (data == NULL || out == NULL || golden == NULL) {
+        fprintf(stderr, "error: out of memory\n");
+        goto done;
     }
 
-    double const best = bench_measure(bench, data, BENCHMARK_PAYLOAD_SIZE, out, out_size);
+    corpus_generate(data, BENCHMARK_PAYLOAD_SIZE, profile, 0x4D697865);
 
-    printf("\t%15s  %-5d  %10.2f MB/s  %10.2f MB/s  %8.2f %%  %9.2f msec\n",
-           corpus_profile_name(bench->profile),
-           bench->level,
-           (double) BENCHMARK_PAYLOAD_SIZE / best / 1024.0 / 1024.0,
-           (double) bench->compressed / best / 1024.0 / 1024.0,
-           bench->ratio * 100.0,
-           best * 1000.0
-    );
+    struct benchmark_impl impls[BENCHMARK_MAX_IMPLS];
+    size_t count = 0;
 
+    if (use_reference && bench_impl_init(&impls[count], YAZ0_SEARCH_REFERENCE, BENCHMARK_PAYLOAD_SIZE, level)) {
+        ++count;
+    }
+
+    for (size_t i = 0; i < sizeof benchmark_searches / sizeof benchmark_searches[0]; ++i) {
+        if (count == BENCHMARK_MAX_IMPLS) {
+            break;
+        }
+        if (bench_impl_init(&impls[count], benchmark_searches[i], BENCHMARK_PAYLOAD_SIZE, level)) {
+            ++count;
+        }
+    }
+
+    if (count == 0) {
+        fprintf(stderr, "error: no search implementations available\n");
+        goto done;
+    }
+
+    size_t rounds = 0;
+    if (bench_measure(impls, count, data, BENCHMARK_PAYLOAD_SIZE,
+                      out, out_size, golden, level, budget, &rounds)) {
+        double const base = impls[0].best;
+
+        for (size_t i = 0; i < count; ++i) {
+            double const best = impls[i].best;
+
+            printf("%15s/%1d  %-9s  %10.2f MB/s  %10.2f MB/s  %8.2f %%  %9.2f msec  %7.2fx  %6zu\n",
+                   corpus_profile_name(profile),
+                   level,
+                   yaz0_search_name(impls[i].search),
+                   (double) BENCHMARK_PAYLOAD_SIZE / best / 1024.0 / 1024.0,
+                   (double) impls[i].produced / best / 1024.0 / 1024.0,
+                   (double) impls[i].produced / (double) BENCHMARK_PAYLOAD_SIZE * 100.0,
+                   best * 1000.0,
+                   base / best,
+                   rounds);
+        }
+    }
+
+    for (size_t i = 0; i < count; ++i) {
+        yaz0_compress_end(&impls[i].stream);
+    }
+
+done:
+    free(golden);
     free(out);
     free(data);
 }
 
+#if defined _WIN32
+static void
+bench_pin_cpu(void) {
+    if (SetThreadAffinityMask(GetCurrentThread(), 1) == 0) {
+        fprintf(stderr, "warning: could not pin to a single CPU\n");
+    }
+}
+#else
+static void bench_pin_cpu(void) {
+    fprintf(stderr, "note: CPU pinning unavailable on this platform\n");
+    fprintf(stderr, "note: benchmark results may not be completely reliable!\n");
+    fprintf(stderr, "note: please implement bench_pin_cpu() for your platform!\n\n");
+}
+#endif
+
 int main(int argc, char** argv) {
-    printf("\t%15s  %-5s  %15s  %15s  %10s  %14s\n",
-           "name", "level", "in", "out", "ratio", "best");
+    double budget = BENCHMARK_BUDGET;
+    bool reference = false;
 
-    for (int p = 0; p < 6; ++p) {
-        enum corpus_profile const profiles[] = {
-            CORPUS_PROFILE_ZEROES,
-            CORPUS_PROFILE_ALTERNATING,
-            CORPUS_PROFILE_BINARY,
-            CORPUS_PROFILE_PERIODIC,
-            CORPUS_PROFILE_STRUCTURED,
-            CORPUS_PROFILE_INCOMPRESSIBLE,
-        };
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "--reference") == 0) {
+            reference = true;
+        } else if (strcmp(argv[i], "--budget") == 0 && i + 1 < argc) {
+            budget = atof(argv[++i]);
+        } else {
+            fprintf(stderr, "Usage: %s [--reference] [--budget SECONDS]\n", argv[0]);
+            return EXIT_FAILURE;
+        }
+    }
 
-        for (int l = 0; l < 4; ++l) {
-            int const levels[] = {0, 1, 6, 9};
-            struct benchmark bench = {
-                .level = levels[l],
-                .profile = profiles[p],
-                .iterations = 0,
-                .compressed = 0,
-                .ratio = 0.0
-            };
-            bench_compress(&bench);
+    // Pin the benchmark to a single core, if the platform supports it.
+    // Schedulers like to fuck with us otherwise =/
+    bench_pin_cpu();
+
+    static enum corpus_profile const profiles[] = {
+        CORPUS_PROFILE_ZEROES,
+        CORPUS_PROFILE_ALTERNATING,
+        CORPUS_PROFILE_BINARY,
+        CORPUS_PROFILE_PERIODIC,
+        CORPUS_PROFILE_STRUCTURED,
+        CORPUS_PROFILE_INCOMPRESSIBLE,
+    };
+
+    static int const levels[] = {0, 1, 6, 9};
+
+    // Look ma, structured output!
+    printf("%17s  %-9s  %15s  %15s  %10s  %14s  %8s  %6s\n",
+           "name", "impl", "in", "out", "ratio", "best", "rel", "rounds");
+
+    for (size_t p = 0; p < sizeof profiles / sizeof profiles[0]; ++p) {
+        for (size_t l = 0; l < sizeof levels / sizeof levels[0]; ++l) {
+            bench_compress(profiles[p], levels[l], budget, reference);
         }
     }
 

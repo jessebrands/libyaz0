@@ -20,9 +20,6 @@ target_link_libraries(test_compress PRIVATE yaz0::yaz0test)
 add_executable(test_decompress test_decompress.c)
 target_link_libraries(test_decompress PRIVATE yaz0::yaz0test)
 
-add_executable(yaz0bench yaz0bench.c)
-target_link_libraries(yaz0bench PRIVATE yaz0::yaz0test)
-
 if (MSVC)
     target_compile_options(yaz0test PRIVATE /W4)
     target_compile_options(test_compress PRIVATE /W4)
@@ -167,3 +164,15 @@ yaz0_add_search_test("AVX2" avx2)
 yaz0_add_search_test("AVX512" avx512)
 yaz0_add_search_test("Neon" neon)
 yaz0_add_search_test("SIMD128" simd128)
+
+#
+# Benchmarking suite
+#
+add_executable(yaz0bench yaz0bench.c)
+target_link_libraries(yaz0bench PRIVATE yaz0::yaz0test)
+
+if (MSVC)
+    target_compile_options(yaz0bench PRIVATE /W4)
+else ()
+    target_compile_options(yaz0bench PRIVATE -Wall -Wextra -Wconversion)
+endif ()
