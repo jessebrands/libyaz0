@@ -18,6 +18,7 @@ option(YAZ0_INSTALL "Enable installation of libyaz0" ${PROJECT_IS_TOP_LEVEL})
 
 option(YAZ0_ENABLE_SSE2 "Enable the SSE2 search implementation on x86" ON)
 option(YAZ0_ENABLE_AVX2 "Enable the AVX2 search implementation on x86" ON)
+option(YAZ0_ENABLE_SIMD128 "Enable the SIMD128 search implementation on WebAssembly" ON)
 
 set(YAZ0_PUBLIC_HEADERS
         include/yaz0/yaz0.h
@@ -37,6 +38,7 @@ set(YAZ0_SOURCES
         src/decompress.c
         src/search.c
         src/search_avx2.c
+        src/search_simd128.c
         src/search_sse2.c
         src/search_swar64.c
         src/stream.c)
@@ -59,12 +61,22 @@ if (YAZ0_ENABLE_AVX2)
     endif ()
 endif ()
 
+if (YAZ0_ENABLE_SIMD128)
+    check_c_compiler_flag("-msimd128" YAZ0_HAVE_SIMD128_FLAG)
+    if (YAZ0_HAVE_SIMD128_FLAG)
+        set_source_files_properties(src/search_simd128.c PROPERTIES COMPILE_OPTIONS "-msimd128")
+    endif ()
+endif ()
+
 set(YAZ0_SIMD_DEFINITIONS)
 if (NOT YAZ0_ENABLE_SSE2)
     list(APPEND YAZ0_SIMD_DEFINITIONS YAZ0_DISABLE_SSE2)
 endif ()
 if (NOT YAZ0_ENABLE_AVX2)
     list(APPEND YAZ0_SIMD_DEFINITIONS YAZ0_DISABLE_AVX2)
+endif ()
+if (NOT YAZ0_ENABLE_SIMD128)
+    list(APPEND YAZ0_SIMD_DEFINITIONS YAZ0_DISABLE_SIMD128)
 endif ()
 
 configure_file(

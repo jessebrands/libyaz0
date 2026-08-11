@@ -40,6 +40,12 @@
 #  define YAZ0_TARGET_X86 0
 #endif
 
+#if defined __wasm__
+#  define YAZ0_TARGET_WASM 1
+#else
+#  define YAZ0_TARGET_WASM 0
+#endif
+
 #if YAZ0_TARGET_X86 && !defined YAZ0_DISABLE_SSE2
 #  define YAZ0_HAVE_SSE2 1
 #else
@@ -50,6 +56,12 @@
 #  define YAZ0_HAVE_AVX2 1
 #else
 #  define YAZ0_HAVE_AVX2 0
+#endif
+
+#if YAZ0_TARGET_WASM && !defined YAZ0_DISABLE_SIMD128
+#  define YAZ0_HAVE_SIMD128 1
+#else
+#  define YAZ0_HAVE_SIMD128 0
 #endif
 
 #if YAZ0_LITTLE_ENDIAN
