@@ -1,3 +1,21 @@
+Version 1.0.1 -- 2026-08-11
+
+    This release introduces the AVX2 search kernel.
+
+  Features
+
+    * An AVX2 implementation of yaz0_search and yaz0_length, providing a 1.4x
+      improvement over SSE2. Compresses OOT 1.0 US in about 2.2 seconds.[1]
+
+  Improvements
+
+    * Several improvements from the AVX2 kernel have been ported to the other
+      implementations. The SSE2 kernel is 1.2x faster too and compresses OOT
+      1.0 US in about 2.85 seconds.[1]
+
+[1]: On an Intel(R) Core(TM) Ultra 285K @ 3.7 GHz
+
+
 Version 1.0 -- 2026-08-11
 
     After a long time, including several scrapped prototypes and earlier
