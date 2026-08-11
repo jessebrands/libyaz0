@@ -152,6 +152,9 @@ enum yaz0_search {
 
     //! Vectorized search using ARM NEON instructions (unimplemented)
     YAZ0_SEARCH_NEON = 6,
+
+    //! Vectorized search using WebAssembly SIMD128 (unimplemented)
+    YAZ0_SEARCH_SIMD128 = 7,
 };
 
 /*!
