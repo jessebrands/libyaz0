@@ -59,3 +59,12 @@ Troubleshooting Failed Tests
         <Results of the Test>
 
     This will allow other developers to reproduce the results.
+
+Benchmarking libyaz0
+
+    The library includes a comprehensive benchmarking suite at
+    test/yaz0bench.c. It is highly recommended that if you are going to write
+    code that could affect performance, you first run the benchmark and save
+    the results and then run it again after you're done with your work so you
+    can compare. Improvements to the library may not cause performance
+    regressions, please include your benchmark results in your pull request.

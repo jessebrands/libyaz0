@@ -1,3 +1,17 @@
+Version 0.4 -- 2026-08-11
+
+    This is the last version before 1.0. This release adds no new features.
+
+  Improvements
+
+    * Added API stubs for future search implementations.
+
+  Correctness
+
+    * Added a comprehensive benchmarking suite.
+    * Added a testing harness for the Yaz0 search algorithm.
+
+
 Version 0.3.1 -- 2026-08-11
 
     This version improves performance on x86 platforms.
