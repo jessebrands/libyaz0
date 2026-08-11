@@ -104,20 +104,27 @@ yaz0_search_sse2(uint8_t const* data, size_t const start_pos,
     __m128i const first = _mm_set1_epi8((char) data[offset]);
     __m128i want = _mm_setzero_si128();
 
-    // Fewer than sixteen candidates cannot fill a block.
-    size_t const tail_start = offset - ((offset - start_pos) & (size_t) 15);
+    size_t const tail_start = offset - ((offset - start_pos) & (size_t) 31);
 
     size_t i = start_pos;
-    for (; i < tail_start; i += 16) {
-        __m128i const head = _mm_loadu_si128((__m128i const*) &data[i]);
-        uint32_t mask = (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(head, first));
+    for (; i < tail_start; i += 32) {
+        __m128i const head_lo = _mm_loadu_si128((__m128i const*) &data[i]);
+        __m128i const head_hi = _mm_loadu_si128((__m128i const*) &data[i + 16]);
+
+        // Bits 0-15 are the candidates at data[i], bits 16-31 those at
+        // data[i + 16], so one mask covers both halves in position order.
+        uint32_t mask = (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(head_lo, first))
+                        | ((uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(head_hi, first)) << 16);
 
         // A match can only be beaten if the byte after the longest run matches
         // too. Testing both bytes together rejects nearly every candidate
         // without ever counting one.
         if (longest_run > 0) {
-            __m128i const tail = _mm_loadu_si128((__m128i const*) &data[i + longest_run]);
-            mask &= (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(tail, want));
+            __m128i const tail_lo = _mm_loadu_si128((__m128i const*) &data[i + longest_run]);
+            __m128i const tail_hi = _mm_loadu_si128((__m128i const*) &data[i + 16 + longest_run]);
+
+            mask &= (uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(tail_lo, want))
+                    | ((uint32_t) _mm_movemask_epi8(_mm_cmpeq_epi8(tail_hi, want)) << 16);
         }
 
         // Bit k is the candidate at data[i + k], so taking the lowest set bit
