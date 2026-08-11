@@ -1,3 +1,19 @@
+Version 1.1 -- 2026-08-12
+
+    This release introduces a SWAR64 kernel.
+
+  Features
+
+    * Massively improved performance on platforms in a portable little-endian
+      kernel that uses SWAR techniques. Improvement is around 5x over the
+      scalar implementation.
+
+  Improvements
+
+    * yaz0bench now produces a total sum of best runs, which more accurately
+      represents performance deltas between algorithms.
+
+
 Version 1.0.1 -- 2026-08-11
 
     This release introduces the AVX2 search kernel.
