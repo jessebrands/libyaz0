@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 project(libyaz0
-        VERSION 1.0.0
+        VERSION 1.0.1
         DESCRIPTION "Yaz0 compression library"
         HOMEPAGE_URL "https://github.com/jessebrands/libyaz0"
         LANGUAGES C)
@@ -17,6 +17,7 @@ option(YAZ0_BUILD_TESTS "Enable building the testing suite" ${PROJECT_IS_TOP_LEV
 option(YAZ0_INSTALL "Enable installation of libyaz0" ${PROJECT_IS_TOP_LEVEL})
 
 option(YAZ0_ENABLE_SSE2 "Enable the SSE2 search implementation on x86" ON)
+option(YAZ0_ENABLE_AVX2 "Enable the AVX2 search implementation on x86" ON)
 
 set(YAZ0_PUBLIC_HEADERS
         include/yaz0/yaz0.h
@@ -35,6 +36,7 @@ set(YAZ0_SOURCES
         src/compress.c
         src/decompress.c
         src/search.c
+        src/search_avx2.c
         src/search_sse2.c
         src/stream.c)
 
@@ -43,6 +45,25 @@ if (YAZ0_ENABLE_SSE2)
     if (YAZ0_HAVE_MSSE2_FLAG)
         set_source_files_properties(src/search_sse2.c PROPERTIES COMPILE_OPTIONS "-msse2")
     endif ()
+endif ()
+
+if (YAZ0_ENABLE_AVX2)
+    if (MSVC)
+        set_source_files_properties(src/search_avx2.c PROPERTIES COMPILE_OPTIONS "/arch:AVX2")
+    else ()
+        check_c_compiler_flag("-mavx2" YAZ0_HAVE_MAVX2_FLAG)
+        if (YAZ0_HAVE_MAVX2_FLAG)
+            set_source_files_properties(src/search_avx2.c PROPERTIES COMPILE_OPTIONS "-mavx2")
+        endif ()
+    endif ()
+endif ()
+
+set(YAZ0_SIMD_DEFINITIONS)
+if (NOT YAZ0_ENABLE_SSE2)
+    list(APPEND YAZ0_SIMD_DEFINITIONS YAZ0_DISABLE_SSE2)
+endif ()
+if (NOT YAZ0_ENABLE_AVX2)
+    list(APPEND YAZ0_SIMD_DEFINITIONS YAZ0_DISABLE_AVX2)
 endif ()
 
 configure_file(
@@ -79,14 +100,13 @@ if (YAZ0_BUILD_SHARED)
             VERSION ${PROJECT_VERSION}
             SOVERSION "${PROJECT_VERSION_MAJOR}")
 
-    target_compile_definitions(yaz0 PRIVATE YAZ0_SHARED)
+    target_compile_definitions(yaz0
+            PRIVATE YAZ0_SHARED
+            PRIVATE ${YAZ0_SIMD_DEFINITIONS})
+
     set_target_properties(yaz0 PROPERTIES C_VISIBILITY_PRESET hidden)
     target_compile_features(yaz0 PUBLIC c_std_99)
     target_compile_options(yaz0 PRIVATE ${YAZ0_WARNING_FLAGS})
-
-    if (NOT YAZ0_ENABLE_SSE2)
-        target_compile_definitions(yaz0 PRIVATE YAZ0_DISABLE_SSE2)
-    endif ()
 endif ()
 
 if (YAZ0_BUILD_STATIC OR YAZ0_BUILD_TESTS)
@@ -110,13 +130,12 @@ if (YAZ0_BUILD_STATIC OR YAZ0_BUILD_TESTS)
         set_target_properties(yaz0_static PROPERTIES OUTPUT_NAME "yaz0")
     endif ()
 
-    target_compile_definitions(yaz0_static PUBLIC YAZ0_STATIC)
+    target_compile_definitions(yaz0_static
+            PUBLIC YAZ0_STATIC
+            PRIVATE ${YAZ0_SIMD_DEFINITIONS})
+
     target_compile_features(yaz0_static PUBLIC c_std_99)
     target_compile_options(yaz0_static PRIVATE ${YAZ0_WARNING_FLAGS})
-
-    if (NOT YAZ0_ENABLE_SSE2)
-        target_compile_definitions(yaz0_static PRIVATE YAZ0_DISABLE_SSE2)
-    endif ()
 endif ()
 
 if (YAZ0_BUILD_TESTS)
