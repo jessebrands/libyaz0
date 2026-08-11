@@ -1,3 +1,14 @@
+Version 0.3.1 -- 2026-08-11
+
+    This version improves performance on x86 platforms.
+
+  Improvements
+
+    * SSE2 kernel has been massively improved; it is now roughly 5 times faster
+      than the scalar implementation. For an Ocarina of Time 1.0 US ROM, this
+      brings compression times down from 16 to about 3.2 seconds.
+
+
 Version 0.3 -- 2026-08-11
 
     This version adds major optimizations for libyaz0 on x86 platforms.
