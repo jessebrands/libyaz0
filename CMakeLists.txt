@@ -168,6 +168,37 @@ if (YAZ0_INSTALL AND YAZ0_INSTALL_TARGETS)
     install(FILES COPYING COPYING.LESSER
             DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/licenses/libyaz0")
 
+    if (IS_ABSOLUTE "${CMAKE_INSTALL_LIBDIR}")
+        set(YAZ0_PC_PREFIX "${CMAKE_INSTALL_PREFIX}")
+    else ()
+        file(RELATIVE_PATH YAZ0_PC_PREFIX_REL
+                "${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig"
+                "${CMAKE_INSTALL_PREFIX}")
+        set(YAZ0_PC_PREFIX "\${pcfiledir}/${YAZ0_PC_PREFIX_REL}")
+    endif ()
+
+    string(REGEX REPLACE "/$" "" YAZ0_PC_PREFIX "${YAZ0_PC_PREFIX}")
+
+    if (IS_ABSOLUTE "${CMAKE_INSTALL_INCLUDEDIR}")
+        set(YAZ0_PC_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}")
+    else ()
+        set(YAZ0_PC_INCLUDEDIR "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+    endif ()
+
+    if (IS_ABSOLUTE "${CMAKE_INSTALL_LIBDIR}")
+        set(YAZ0_PC_LIBDIR "${CMAKE_INSTALL_LIBDIR}")
+    else ()
+        set(YAZ0_PC_LIBDIR "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
+    endif ()
+
+    configure_file(
+            "${CMAKE_CURRENT_SOURCE_DIR}/cmake/libyaz0.pc.in"
+            "${CMAKE_CURRENT_BINARY_DIR}/libyaz0.pc"
+            @ONLY)
+
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libyaz0.pc"
+            DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+
     if (PROJECT_IS_TOP_LEVEL)
         set(CPACK_PACKAGE_NAME "libyaz0")
         set(CPACK_PACKAGE_VENDOR "Jesse Gerard Brands")

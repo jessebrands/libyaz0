@@ -1,0 +1,11 @@
+prefix=@YAZ0_PC_PREFIX@
+exec_prefix=${prefix}
+libdir=@YAZ0_PC_LIBDIR@
+includedir=@YAZ0_PC_INCLUDEDIR@
+
+Name: libyaz0
+Description: @PROJECT_DESCRIPTION@
+URL: @PROJECT_HOMEPAGE_URL@
+Version: @PROJECT_VERSION@
+Cflags: -I${includedir}
+Libs: -L${libdir} -lyaz0
