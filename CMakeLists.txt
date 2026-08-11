@@ -65,9 +65,8 @@ if (YAZ0_BUILD_SHARED)
 
     set_target_properties(yaz0 PROPERTIES
             OUTPUT_NAME "yaz0"
-            DEBUG_POSTFIX "d"
             VERSION ${PROJECT_VERSION}
-            SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+            SOVERSION "${PROJECT_VERSION_MAJOR}")
 
     target_compile_definitions(yaz0 PRIVATE YAZ0_SHARED)
     set_target_properties(yaz0 PROPERTIES C_VISIBILITY_PRESET hidden)
