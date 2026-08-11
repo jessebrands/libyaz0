@@ -23,7 +23,8 @@
 
 #include "stream.h"
 
-size_t yaz0_stream_read(struct yaz0_stream* stream, uint8_t* dest, size_t const length) {
+size_t
+yaz0_stream_read(struct yaz0_stream* stream, uint8_t* dest, size_t const length) {
     assert(dest != NULL);
 
     size_t const have = length > stream->avail_in ? stream->avail_in : length;
@@ -40,7 +41,8 @@ size_t yaz0_stream_read(struct yaz0_stream* stream, uint8_t* dest, size_t const 
     return have;
 }
 
-uint8_t yaz0_stream_read_byte_unsafe(struct yaz0_stream* stream) {
+uint8_t
+yaz0_stream_read_byte_unsafe(struct yaz0_stream* stream) {
     assert(stream->avail_in > 0 && stream->next_in != NULL);
 
     uint8_t const b = *stream->next_in;
@@ -50,7 +52,8 @@ uint8_t yaz0_stream_read_byte_unsafe(struct yaz0_stream* stream) {
     return b;
 }
 
-enum yaz0_io_result yaz0_stream_read_byte(struct yaz0_stream* stream, uint8_t* b) {
+enum yaz0_io_result
+yaz0_stream_read_byte(struct yaz0_stream* stream, uint8_t* b) {
     if (!yaz0_stream_read_available(stream)) {
         return YAZ0_IO_READ_ERROR;
     }
@@ -58,7 +61,8 @@ enum yaz0_io_result yaz0_stream_read_byte(struct yaz0_stream* stream, uint8_t* b
     return YAZ0_IO_OK;
 }
 
-size_t yaz0_stream_write(struct yaz0_stream* stream, uint8_t const* src, size_t const length) {
+size_t
+yaz0_stream_write(struct yaz0_stream* stream, uint8_t const* src, size_t const length) {
     assert(src != NULL);
 
     size_t const have = length > stream->avail_out ? stream->avail_out : length;
@@ -75,7 +79,8 @@ size_t yaz0_stream_write(struct yaz0_stream* stream, uint8_t const* src, size_t 
     return have;
 }
 
-void yaz0_stream_write_byte_unsafe(struct yaz0_stream* stream, uint8_t const b) {
+void
+yaz0_stream_write_byte_unsafe(struct yaz0_stream* stream, uint8_t const b) {
     assert(stream->avail_out > 0 && stream->next_out != NULL);
 
     *stream->next_out = b;
@@ -84,7 +89,8 @@ void yaz0_stream_write_byte_unsafe(struct yaz0_stream* stream, uint8_t const b) 
     stream->total_out++;
 }
 
-enum yaz0_io_result yaz0_stream_write_byte(struct yaz0_stream* stream, uint8_t const b) {
+enum yaz0_io_result
+yaz0_stream_write_byte(struct yaz0_stream* stream, uint8_t const b) {
     if (!yaz0_stream_write_available(stream)) {
         return YAZ0_IO_WRITE_ERROR;
     }
@@ -92,7 +98,8 @@ enum yaz0_io_result yaz0_stream_write_byte(struct yaz0_stream* stream, uint8_t c
     return YAZ0_IO_OK;
 }
 
-uint8_t yaz0_stream_copy_byte_unsafe(struct yaz0_stream* stream) {
+uint8_t
+yaz0_stream_copy_byte_unsafe(struct yaz0_stream* stream) {
     assert(stream->avail_in > 0 && stream->next_in != NULL);
     assert(stream->avail_out > 0 && stream->next_out != NULL);
 
@@ -101,7 +108,8 @@ uint8_t yaz0_stream_copy_byte_unsafe(struct yaz0_stream* stream) {
     return b;
 }
 
-enum yaz0_io_result yaz0_stream_copy_byte(struct yaz0_stream* stream, uint8_t* b) {
+enum yaz0_io_result
+yaz0_stream_copy_byte(struct yaz0_stream* stream, uint8_t* b) {
     if (!yaz0_stream_read_available(stream)) {
         return YAZ0_IO_READ_ERROR;
     }

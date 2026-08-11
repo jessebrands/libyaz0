@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "yaz0/config.h"
+#include <yaz0/config.h>
 
 #if defined _WIN32 || defined __CYGWIN__
 #  if defined YAZ0_STATIC
@@ -42,7 +42,6 @@
 
 #if defined __cplusplus
 extern "C" {
-
 #endif
 
 /*!
@@ -61,7 +60,7 @@ typedef void (* yaz0_free_func)(void* opaque, void* ptr);
  * Return codes returned by the library.
  */
 enum yaz0_result {
-    //! The operation succeeded successfully.
+    //! The operation succeeded.
     YAZ0_OK = 0,
 
     //! The stream has finished (de)compressing all data.
@@ -132,13 +131,13 @@ enum yaz0_level {
  * Search algorithm selection.
  */
 enum yaz0_search {
-    //! Let the library pick the fastest implementation available.
+    //! Let the library pick the fastest implementation available
     YAZ0_SEARCH_AUTO = 0,
 
-    //! Correct but slow reference implementation.
+    //! Correct but slow reference implementation
     YAZ0_SEARCH_REFERENCE = 1,
 
-    //! Fast, portable scalar implementation available on all hardware.
+    //! Fast, portable scalar implementation available on all hardware
     YAZ0_SEARCH_SCALAR = 2,
 
     //! Very fast vectorized search using SSE2
@@ -179,16 +178,16 @@ struct yaz0_compress_options {
  * Structure describing a Yaz0 header.
  */
 struct yaz0_header {
-    //! Always Yaz0, output only.
+    //! Always Yaz0, read only.
     char magic[4];
 
     //! The size in bytes of the data when decompressed.
     uint32_t uncompressed_size;
 
-    //! Alignment hint, ignored by libyaz0.
+    //! Alignment hint.
     uint32_t alignment;
 
-    //! Unused, reserved by Nintendo.
+    //! Reserved by Nintendo.
     uint8_t reserved[4];
 };
 
@@ -321,7 +320,6 @@ yaz0_compress_search(struct yaz0_stream const* stream);
  * \brief Returns the worst-case compression scenario size.
  * \param uncompressed_size Uncompressed size in bytes.
  * \return Compressed size in the worst-case scenario.
- * \note This value is 112.5% of the uncompressed size.
  */
 YAZ0_API size_t
 yaz0_compress_bound(uint32_t uncompressed_size);

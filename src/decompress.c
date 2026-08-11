@@ -78,11 +78,11 @@ decompress_continue(struct yaz0_decompress_state* state, enum yaz0_decompress_mo
 
 static enum yaz0_step
 decompress_header(struct yaz0_decompress_state* state, enum yaz0_flush const flush, enum yaz0_result* result) {
-    size_t const want = 16 - state->history_pos;
+    size_t const want = YAZ0_HEADER_SIZE - state->history_pos;
     uint8_t* header_buf = &state->history[state->history_pos];
     state->history_pos += yaz0_stream_read(state->common.stream, header_buf, want);
 
-    bool const complete = state->history_pos == 16;
+    bool const complete = state->history_pos == YAZ0_HEADER_SIZE;
     if (!complete) {
         if (flush == YAZ0_FINISH) {
             return decompress_error(state, YAZ0_TRUNCATED, result);
@@ -91,7 +91,7 @@ decompress_header(struct yaz0_decompress_state* state, enum yaz0_flush const flu
         return decompress_suspend(result);
     }
 
-    enum yaz0_result const parse_result = yaz0_read_header(state->history, 16, &state->header);
+    enum yaz0_result const parse_result = yaz0_read_header(state->history, YAZ0_HEADER_SIZE, &state->header);
     if (parse_result != YAZ0_OK) {
         return decompress_error(state, parse_result, result);
     }

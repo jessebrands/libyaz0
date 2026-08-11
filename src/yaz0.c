@@ -23,14 +23,16 @@
 #include "common.h"
 #include "yaz0/yaz0.h"
 
-static inline uint32_t read_be32(uint8_t const* p) {
+static inline uint32_t
+read_be32(uint8_t const* p) {
     return ((uint32_t) p[0] << 24)
            | ((uint32_t) p[1] << 16)
            | ((uint32_t) p[2] << 8)
            | (uint32_t) p[3];
 }
 
-static inline void write_be32(uint8_t* p, uint32_t const v) {
+static inline void
+write_be32(uint8_t* p, uint32_t const v) {
     p[0] = (uint8_t) (v >> 24);
     p[1] = (uint8_t) (v >> 16);
     p[2] = (uint8_t) (v >> 8);
@@ -39,7 +41,7 @@ static inline void write_be32(uint8_t* p, uint32_t const v) {
 
 enum yaz0_result
 yaz0_read_header(uint8_t const* data, size_t const size, struct yaz0_header* header) {
-    if (size < 16) {
+    if (size < YAZ0_HEADER_SIZE) {
         return YAZ0_BUFFER_ERROR;
     }
 
@@ -57,7 +59,7 @@ yaz0_read_header(uint8_t const* data, size_t const size, struct yaz0_header* hea
 
 enum yaz0_result
 yaz0_write_header(struct yaz0_header const* header, uint8_t* dst, size_t const size) {
-    if (size < 16) {
+    if (size < YAZ0_HEADER_SIZE) {
         return YAZ0_BUFFER_ERROR;
     }
 
@@ -87,7 +89,8 @@ yaz0_result_name(enum yaz0_result const result) {
     return "<invalid value>";
 }
 
-char const* yaz0_result_string(enum yaz0_result result) {
+char const*
+yaz0_result_string(enum yaz0_result const result) {
     switch (result) {
         case YAZ0_OK: return "ok";
         case YAZ0_STREAM_END: return "stream has reached the end";
