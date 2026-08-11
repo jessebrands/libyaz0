@@ -25,6 +25,15 @@
 
 #include "yaz0/yaz0.h"
 
+#if defined __BYTE_ORDER__ && defined __ORDER_LITTLE_ENDIAN__
+#  define YAZ0_LITTLE_ENDIAN (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+#elif defined _MSC_VER
+   /* MSVC defines no byte-order macro and targets no big-endian platform. */
+#  define YAZ0_LITTLE_ENDIAN 1
+#else
+#  define YAZ0_LITTLE_ENDIAN 0
+#endif
+
 #if defined __x86_64__ || defined _M_X64 || defined __i386__ || defined _M_IX86
 #  define YAZ0_TARGET_X86 1
 #else
@@ -41,6 +50,12 @@
 #  define YAZ0_HAVE_AVX2 1
 #else
 #  define YAZ0_HAVE_AVX2 0
+#endif
+
+#if YAZ0_LITTLE_ENDIAN
+#  define YAZ0_HAVE_SWAR64 1
+#else
+#  define YAZ0_HAVE_SWAR64 0
 #endif
 
 #define YAZ0_MAGIC "Yaz0"

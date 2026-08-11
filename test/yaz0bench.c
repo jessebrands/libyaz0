@@ -63,6 +63,7 @@ static enum yaz0_search const benchmark_searches[] = {
     YAZ0_SEARCH_AVX512,
     YAZ0_SEARCH_NEON,
     YAZ0_SEARCH_SIMD128,
+    YAZ0_SEARCH_SWAR64,
 };
 
 struct benchmark {

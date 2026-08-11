@@ -156,6 +156,9 @@ enum yaz0_search {
 
     //! Vectorized search using WebAssembly SIMD128 (unimplemented)
     YAZ0_SEARCH_SIMD128 = 7,
+
+    //! 'Vectorized' search using SWAR techniques
+    YAZ0_SEARCH_SWAR64 = 8,
 };
 
 /*!

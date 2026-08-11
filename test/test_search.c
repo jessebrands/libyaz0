@@ -68,6 +68,8 @@ parse_opts(int argc, char** argv, struct search_opts* opts) {
         opts->search = YAZ0_SEARCH_NEON;
     } else if (strcmp(argv[1], "simd128") == 0) {
         opts->search = YAZ0_SEARCH_SIMD128;
+    } else if (strcmp(argv[1], "swar64") == 0) {
+        opts->search = YAZ0_SEARCH_SWAR64;
     } else {
         fprintf(stderr, "error: unknown algorithm: %s\n", argv[1]);
         return false;

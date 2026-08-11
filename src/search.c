@@ -128,6 +128,9 @@ static struct yaz0_search_impl const implementations[] = {
 #if YAZ0_HAVE_SSE2
     {YAZ0_SEARCH_SSE2, "sse2", yaz0_search_sse2, yaz0_search_sse2_supported},
 #endif
+#if YAZ0_HAVE_SWAR64
+    {YAZ0_SEARCH_SWAR64, "swar64", yaz0_search_swar64, yaz0_search_swar64_supported},
+#endif
     {YAZ0_SEARCH_SCALAR, "scalar", yaz0_search_scalar, yaz0_search_scalar_supported},
     {YAZ0_SEARCH_REFERENCE, "reference", yaz0_search_reference, yaz0_search_reference_supported},
 };

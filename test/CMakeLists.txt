@@ -152,6 +152,7 @@ yaz0_add_search_test("AVX2" avx2)
 yaz0_add_search_test("AVX512" avx512)
 yaz0_add_search_test("Neon" neon)
 yaz0_add_search_test("SIMD128" simd128)
+yaz0_add_search_test("SWAR64" swar64)
 
 #
 # Benchmarking suite

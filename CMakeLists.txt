@@ -38,6 +38,7 @@ set(YAZ0_SOURCES
         src/search.c
         src/search_avx2.c
         src/search_sse2.c
+        src/search_swar64.c
         src/stream.c)
 
 if (YAZ0_ENABLE_SSE2)

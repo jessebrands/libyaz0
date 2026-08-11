@@ -68,6 +68,20 @@ size_t
 yaz0_search_scalar(uint8_t const* data, size_t start_pos, size_t offset,
                    size_t max_lookahead, size_t* match_pos);
 
+#if YAZ0_HAVE_SWAR64
+/*!
+ * \brief Fast, portable search implementation making use of SWAR techniques.
+ * \see yaz0_search_func
+ * \note Available on little-endian only.
+ */
+size_t
+yaz0_search_swar64(uint8_t const* data, size_t start_pos, size_t offset,
+                 size_t max_lookahead, size_t* match_pos);
+#endif
+
+bool
+yaz0_search_swar64_supported(void);
+
 #if YAZ0_HAVE_SSE2
 size_t
 yaz0_search_sse2(uint8_t const* data, size_t start_pos, size_t offset,
