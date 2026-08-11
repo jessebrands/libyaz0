@@ -158,7 +158,7 @@ if (YAZ0_INSTALL AND YAZ0_INSTALL_TARGETS)
     write_basic_package_version_file(
             "${CMAKE_CURRENT_BINARY_DIR}/yaz0ConfigVersion.cmake"
             VERSION ${PROJECT_VERSION}
-            COMPATIBILITY SameMinorVersion)
+            COMPATIBILITY SameMajorVersion)
 
     install(FILES
             "${CMAKE_CURRENT_BINARY_DIR}/yaz0Config.cmake"
