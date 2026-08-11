@@ -1,3 +1,11 @@
+set(YAZ0_CORPUS_GENERATORS
+        "Zeroes"
+        "Alternating"
+        "Binary"
+        "Periodic"
+        "Structured"
+        "Incompressible")
+
 set(YAZ0_TEST_DATA_DIR "" CACHE PATH
         "Directory of extracted Yaz0 test data (scanned recursively)")
 
@@ -121,3 +129,41 @@ if (YAZ0_TEST_DATA_DIR)
                 "were skipped")
     endif ()
 endif ()
+
+#
+# Testing suite for search algorithms
+#
+add_executable(test_search
+        test_search.c)
+
+target_link_libraries(test_search
+        PRIVATE yaz0::yaz0_static
+        PRIVATE yaz0::yaz0test)
+
+target_include_directories(test_search
+        PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+if (MSVC)
+    target_compile_options(test_search PRIVATE /W4)
+else ()
+    target_compile_options(test_search PRIVATE -Wall -Wextra -Wconversion)
+endif ()
+
+function(yaz0_add_search_test name algorithm)
+    foreach (corpus_name IN ITEMS ${YAZ0_CORPUS_GENERATORS})
+        string(TOLOWER ${corpus_name} corpus)
+
+        add_test(NAME "Search.${name}.${corpus_name}" COMMAND test_search ${algorithm} ${corpus})
+        set_tests_properties("Search.${name}.${corpus_name}" PROPERTIES
+                LABELS "search"
+                SKIP_RETURN_CODE 2)
+    endforeach ()
+endfunction()
+
+yaz0_add_search_test("Reference" reference)
+yaz0_add_search_test("Scalar" scalar)
+yaz0_add_search_test("SSE2" sse2)
+yaz0_add_search_test("AVX2" avx2)
+yaz0_add_search_test("AVX512" avx512)
+yaz0_add_search_test("Neon" neon)
+yaz0_add_search_test("SIMD128" simd128)
