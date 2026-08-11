@@ -45,8 +45,8 @@ static inline size_t
 yaz0_length_simd128(uint8_t const* a, uint8_t const* b, size_t const max_lookahead) {
     size_t i = 0;
     while (max_lookahead - i >= 16) {
-        v128_t const x = wasm_v128_load((v128_t const*) (a + i));
-        v128_t const y = wasm_v128_load((v128_t const*) (b + i));
+        v128_t const x = wasm_v128_load(&a[i]);
+        v128_t const y = wasm_v128_load(&b[i]);
         uint32_t const diff = (~wasm_i8x16_bitmask(wasm_i8x16_eq(x, y))) & 0xFFFFu;
         if (diff != 0) {
             return i + yaz0_ctz32(diff);
@@ -83,8 +83,8 @@ yaz0_search_simd128(uint8_t const* data, size_t const start_pos, size_t const of
 
     size_t i = start_pos;
     for (; i < tail_start; i += 16) {
-        v128_t const head = wasm_v128_load((v128_t const*) &data[i]);
-        v128_t const tail = wasm_v128_load((v128_t const*) &data[i + want_offset]);
+        v128_t const head = wasm_v128_load(&data[i]);
+        v128_t const tail = wasm_v128_load(&data[i + want_offset]);
         v128_t const hit = wasm_v128_and(wasm_i8x16_eq(head, first), wasm_i8x16_eq(tail, want));
         uint32_t mask = wasm_i8x16_bitmask(hit);
 
