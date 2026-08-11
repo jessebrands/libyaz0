@@ -119,6 +119,7 @@ char const*
 yaz0_search_name(enum yaz0_search const search) {
     switch (search) {
         case YAZ0_SEARCH_AUTO: return "auto";
+        case YAZ0_SEARCH_REFERENCE: return "reference";
         case YAZ0_SEARCH_SCALAR: return "scalar";
         case YAZ0_SEARCH_SSE2: return "sse2";
     }

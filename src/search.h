@@ -41,9 +41,29 @@ struct yaz0_search_impl {
     bool (* supported)(void);
 };
 
+/*!
+ * \brief Reference implementation for substring match length. VERY SLOW!
+ */
+size_t
+yaz0_length_reference(uint8_t const* a, uint8_t const* b, size_t max_lookahead);
+
+/*!
+ * \brief Reference implementation for the search algorithm. Very, very slow!
+ */
+size_t
+yaz0_search_reference(uint8_t const* data, size_t start_pos, size_t offset,
+                      size_t max_lookahead, size_t* match_pos);
+
+/*!
+ * \brief Fast, portable matching length using memchr.
+ */
 size_t
 yaz0_length_scalar(uint8_t const* a, uint8_t const* b, size_t max_lookahead);
 
+/*!
+ * \brief Fast, portable longest matching substring search using memchr and a filter.
+ * \see yaz0_search_func
+ */
 size_t
 yaz0_search_scalar(uint8_t const* data, size_t start_pos, size_t offset,
                    size_t max_lookahead, size_t* match_pos);
