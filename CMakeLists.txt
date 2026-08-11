@@ -96,9 +96,13 @@ if (YAZ0_BUILD_STATIC OR YAZ0_BUILD_TESTS)
             PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
             PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-    set_target_properties(yaz0_static PROPERTIES
-            OUTPUT_NAME "yaz0s"
-            DEBUG_POSTFIX "d")
+    if (MSVC)
+        # MSVC will create a yaz0.lib for both static and shared targets.
+        # We prefix the static library with 's' on MSVC to prevent that.
+        set_target_properties(yaz0_static PROPERTIES OUTPUT_NAME "yaz0s")
+    else ()
+        set_target_properties(yaz0_static PROPERTIES OUTPUT_NAME "yaz0")
+    endif ()
 
     target_compile_definitions(yaz0_static PUBLIC YAZ0_STATIC)
     target_compile_features(yaz0_static PUBLIC c_std_99)
