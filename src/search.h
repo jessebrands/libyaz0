@@ -21,10 +21,43 @@
 #ifndef LIBYAZ0_SEARCH_H
 #define LIBYAZ0_SEARCH_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
+#include "common.h"
+#include "yaz0/yaz0.h"
+
+/*!
+ * Function pointer type for a longest matching substring search function.
+ */
+typedef size_t (* yaz0_search_func)(uint8_t const* data, size_t start_pos, size_t offset,
+                                    size_t max_lookahead, size_t* match_pos);
+
+struct yaz0_search_impl {
+    enum yaz0_search id;
+    char const* name;
+    yaz0_search_func search;
+    bool (* supported)(void);
+};
+
 size_t
-yaz0_search(uint8_t const* data, size_t start_pos, size_t offset, size_t max_lookahead, size_t* match_pos);
+yaz0_length_scalar(uint8_t const* a, uint8_t const* b, size_t max_lookahead);
+
+size_t
+yaz0_search_scalar(uint8_t const* data, size_t start_pos, size_t offset,
+                   size_t max_lookahead, size_t* match_pos);
+
+#if YAZ0_HAVE_SSE2
+size_t
+yaz0_search_sse2(uint8_t const* data, size_t start_pos, size_t offset,
+                 size_t max_lookahead, size_t* match_pos);
+#endif
+
+bool
+yaz0_search_sse2_supported(void);
+
+struct yaz0_search_impl const*
+yaz0_search_select(enum yaz0_search search);
 
 #endif //LIBYAZ0_SEARCH_H

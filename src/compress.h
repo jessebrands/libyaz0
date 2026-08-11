@@ -22,6 +22,7 @@
 #define LIBYAZ0_COMPRESS_H
 
 #include "common.h"
+#include "search.h"
 #include "yaz0/yaz0.h"
 
 enum yaz0_compress_mode {
@@ -39,6 +40,7 @@ struct yaz0_compress_state {
    struct yaz0_common_state common;
    enum yaz0_compress_mode mode;
    enum yaz0_result error;
+   struct yaz0_search_impl const* search;
 
    size_t search_distance;
    uint32_t uncompressed_size;
@@ -46,7 +48,9 @@ struct yaz0_compress_state {
    uint8_t header_reserved[4];
    size_t received;
 
-   uint8_t window[YAZ0_MAX_DISTANCE * 2 + YAZ0_MAX_MATCH];
+   //! Sliding window. The padding is there to ensure vectorized
+   //! implementations never over-read past the end of the window.
+   uint8_t window[YAZ0_WINDOW_SIZE + YAZ0_WINDOW_PADDING];
    size_t window_pos;
    size_t window_size;
 

@@ -1,3 +1,32 @@
+Version 0.3.1 -- 2026-08-11
+
+    This version improves performance on x86 platforms.
+
+  Improvements
+
+    * SSE2 kernel has been massively improved; it is now roughly 5 times faster
+      than the scalar implementation. For an Ocarina of Time 1.0 US ROM, this
+      brings compression times down from 16 to about 3.2 seconds.
+
+
+Version 0.3 -- 2026-08-11
+
+    This version adds major optimizations for libyaz0 on x86 platforms.
+
+  Features
+
+    * Dynamic dispatch for compress search function.
+    * New functions to query the search algorithm.
+    * Search algorithm selection when initializing a compression stream.
+
+  Improvements
+
+    * This release adds a SSE2 kernel for the compressor's longest substring
+      search and match length algorithms. This massively speeds up compression
+      on x86 hosts. The gains are around 2.5x on the compression of a full
+      Nintendo 64 Zelda ROM.
+
+
 Version 0.2.0 -- 2026-08-09
 
     This version adds several utility functions.

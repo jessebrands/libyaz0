@@ -3,3 +3,4 @@ Please add yourself to the bottom of the list when contributing changes.
 
 Jesse Gerard Brands <jesse@jgbrands.nl>
     * Original author and maintainer.
+    * SSE2 search kernel.

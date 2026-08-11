@@ -91,6 +91,9 @@ enum yaz0_result {
     //! The stream has ended without errors, but has not written or read the
     //! expected amount of bytes.
     YAZ0_SIZE_MISMATCH = -8,
+
+    //! The selected option is unsupported.
+    YAZ0_UNSUPPORTED = -9,
 };
 
 /*!
@@ -126,6 +129,20 @@ enum yaz0_level {
 };
 
 /*!
+ * Search algorithm selection.
+ */
+enum yaz0_search {
+    //! Let the library pick the fastest implementation available.
+    YAZ0_SEARCH_AUTO = 0,
+
+    //! Fast, portable scalar implementation available on all hardware.
+    YAZ0_SEARCH_SCALAR = 1,
+
+    //! Very fast vectorized searching using SSE2
+    YAZ0_SEARCH_SSE2 = 2,
+};
+
+/*!
  * \brief Options that can be passed to the compressor.
  * \see yaz0_compress_init_with_options
  */
@@ -138,6 +155,9 @@ struct yaz0_compress_options {
 
     //! Value for the reserved bytes, copied into the header.
     uint8_t reserved[4];
+
+    //! Search algorithm.
+    enum yaz0_search search;
 };
 
 /*!
@@ -273,6 +293,16 @@ yaz0_compress_reset(struct yaz0_stream* stream, uint32_t uncompressed_size,
                     struct yaz0_compress_options options);
 
 /*!
+ * \brief Returns the search implementation a compression stream is using.
+ * \param stream Pointer to a compression stream.
+ * \return The resolved implementation.
+ * \note Calling this function on a stream that isn't a compression stream is
+ *       undefined behavior.
+ */
+YAZ0_API enum yaz0_search
+yaz0_compress_search(struct yaz0_stream const* stream);
+
+/*!
  * \brief Returns the worst-case compression scenario size.
  * \param uncompressed_size Uncompressed size in bytes.
  * \return Compressed size in the worst-case scenario.
@@ -367,6 +397,21 @@ yaz0_version(void);
  */
 YAZ0_API char const*
 yaz0_version_string(void);
+
+/*!
+ * \brief Returns the default search implementation.
+ * \return The implementation this host defaults to.
+ */
+YAZ0_API enum yaz0_search
+yaz0_default_search(void);
+
+/*!
+ * \brief Returns a human-readable name for a search implementation.
+ * \param search Search implementation.
+ * \return Null-terminated string.
+ */
+YAZ0_API char const*
+yaz0_search_name(enum yaz0_search search);
 
 #if defined __cplusplus
 }
