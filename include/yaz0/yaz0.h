@@ -128,7 +128,9 @@ enum yaz0_level {
 };
 
 /*!
- * Search algorithm selection.
+ * \brief Search algorithm selection.
+ * \note You probably do not want to select an implementation manually, use
+ *       LIBYAZ0_SEARCH_AUTO or yaz0_default_search.
  */
 enum yaz0_search {
     //! Let the library pick the fastest implementation available
