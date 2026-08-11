@@ -17,6 +17,7 @@ option(YAZ0_BUILD_TESTS "Enable building the testing suite" ${PROJECT_IS_TOP_LEV
 option(YAZ0_INSTALL "Enable installation of libyaz0" ${PROJECT_IS_TOP_LEVEL})
 
 option(YAZ0_ENABLE_SSE2 "Enable the SSE2 search implementation on x86" ON)
+option(YAZ0_ENABLE_AVX2 "Enable the AVX2 search implementation on x86" ON)
 
 set(YAZ0_PUBLIC_HEADERS
         include/yaz0/yaz0.h
@@ -35,6 +36,7 @@ set(YAZ0_SOURCES
         src/compress.c
         src/decompress.c
         src/search.c
+        src/search_avx2.c
         src/search_sse2.c
         src/stream.c)
 
@@ -42,6 +44,17 @@ if (YAZ0_ENABLE_SSE2)
     check_c_compiler_flag("-msse2" YAZ0_HAVE_MSSE2_FLAG)
     if (YAZ0_HAVE_MSSE2_FLAG)
         set_source_files_properties(src/search_sse2.c PROPERTIES COMPILE_OPTIONS "-msse2")
+    endif ()
+endif ()
+
+if (YAZ0_ENABLE_AVX2)
+    if (MSVC)
+        set_source_files_properties(src/search_avx2.c PROPERTIES COMPILE_OPTIONS "/arch:AVX2")
+    else ()
+        check_c_compiler_flag("-mavx2" YAZ0_HAVE_MAVX2_FLAG)
+        if (YAZ0_HAVE_MAVX2_FLAG)
+            set_source_files_properties(src/search_avx2.c PROPERTIES COMPILE_OPTIONS "-mavx2")
+        endif ()
     endif ()
 endif ()
 

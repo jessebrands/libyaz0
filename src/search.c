@@ -122,6 +122,9 @@ yaz0_search_scalar_supported(void) {
 }
 
 static struct yaz0_search_impl const implementations[] = {
+#if YAZ0_HAVE_AVX2
+    {YAZ0_SEARCH_AVX2, "avx2", yaz0_search_avx2, yaz0_search_avx2_supported},
+#endif
 #if YAZ0_HAVE_SSE2
     {YAZ0_SEARCH_SSE2, "sse2", yaz0_search_sse2, yaz0_search_sse2_supported},
 #endif
