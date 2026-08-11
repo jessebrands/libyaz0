@@ -147,20 +147,17 @@ yaz0_search_avx2(uint8_t const* data, size_t const start_pos,
     size_t longest_run = 0;
 
     __m256i const first = _mm256_set1_epi8((char) data[offset]);
-    __m256i want = _mm256_setzero_si256();
+    __m256i want = first;
 
     size_t const tail_start = offset - ((offset - start_pos) & (size_t) 31);
 
     size_t i = start_pos;
     for (; i < tail_start; i += 32) {
         __m256i const head = _mm256_loadu_si256((__m256i const*) &data[i]);
-        uint32_t mask = (uint32_t) _mm256_movemask_epi8(_mm256_cmpeq_epi8(head, first));
+        __m256i const tail = _mm256_loadu_si256((__m256i const*) &data[i + longest_run]);
+        __m256i const hit = _mm256_and_si256(_mm256_cmpeq_epi8(head, first), _mm256_cmpeq_epi8(tail, want));
 
-        if (longest_run > 0) {
-            __m256i const tail = _mm256_loadu_si256((__m256i const*) &data[i + longest_run]);
-            mask &= (uint32_t) _mm256_movemask_epi8(_mm256_cmpeq_epi8(tail, want));
-        }
-
+        uint32_t mask = (uint32_t) _mm256_movemask_epi8(hit);
         while (mask != 0) {
             size_t const pos = i + yaz0_ctz32(mask);
             mask &= mask - 1;
