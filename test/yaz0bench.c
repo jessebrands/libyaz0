@@ -83,6 +83,12 @@ struct benchmark_impl {
     double best;
 };
 
+struct bench_totals {
+    enum yaz0_search search[BENCHMARK_MAX_IMPLS];
+    double seconds[BENCHMARK_MAX_IMPLS];
+    size_t count;
+};
+
 static bool
 bench_impl_init(struct benchmark_impl* impl, enum yaz0_search const search,
                 uint32_t const src_size, int const level) {
@@ -167,7 +173,8 @@ bench_measure(struct benchmark_impl* impls, size_t const count,
 
 static void
 bench_compress(enum corpus_profile const profile, int const level,
-               double const budget, bool const use_reference) {
+               double const budget, bool const use_reference,
+               struct bench_totals* const totals) {
     size_t const out_size = yaz0_compress_bound(BENCHMARK_PAYLOAD_SIZE);
 
     uint8_t* data = malloc(BENCHMARK_PAYLOAD_SIZE);
@@ -220,6 +227,12 @@ bench_compress(enum corpus_profile const profile, int const level,
                    best * 1000.0,
                    base / best,
                    rounds);
+
+            totals->count = count;
+            for (size_t k = 0; k < count; ++k) {
+                totals->search[k] = impls[k].search;
+                totals->seconds[k] += impls[k].best;
+            }
         }
     }
 
@@ -277,6 +290,7 @@ int main(int argc, char** argv) {
     };
 
     static int const levels[] = {0, 1, 6, 9};
+    static struct bench_totals totals[sizeof levels / sizeof levels[0]];
 
     // Look ma, structured output!
     printf("%17s  %-9s  %15s  %15s  %10s  %14s  %8s  %6s\n",
@@ -284,7 +298,22 @@ int main(int argc, char** argv) {
 
     for (size_t p = 0; p < sizeof profiles / sizeof profiles[0]; ++p) {
         for (size_t l = 0; l < sizeof levels / sizeof levels[0]; ++l) {
-            bench_compress(profiles[p], levels[l], budget, reference);
+            bench_compress(profiles[p], levels[l], budget, reference, &totals[l]);
+        }
+    }
+
+    printf("\n%17s    %14s  %8s\n", "impl", "total", "rel");
+    for (size_t l = 0; l < sizeof levels / sizeof levels[0]; ++l) {
+        if (totals[l].count == 0) {
+            continue;
+        }
+
+        for (size_t k = 0; k < totals[l].count; ++k) {
+            printf("%15s/%1d    %11.2f ms  %7.2fx\n",
+                   yaz0_search_name(totals[l].search[k]),
+                   levels[l],
+                   totals[l].seconds[k] * 1000.0,
+                   totals[l].seconds[0] / totals[l].seconds[k]);
         }
     }
 
