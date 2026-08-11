@@ -44,6 +44,12 @@ Compiling
     the C99 standard.
 
 Versioning
-    libyaz0 uses semantic versioning. Until the 1.0 release, no guarantee of
-    API or ABI stability is made: any 0.x release may change the public
-    interface.
+
+    libyaz0 uses semantic versioning. ABI stability is guaranteed for major
+    versions. Minor versions are always backwards compatible, and only expand
+    the ABI.
+
+    Lastly, libyaz0 has a byte-exactness guarantee at level 9, it will always
+    produce the same output as Nintendo's implementation does. However, there
+    is no guarantee that libyaz0 generates the exact same output between
+    different versions of the library.
