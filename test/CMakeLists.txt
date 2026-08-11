@@ -12,22 +12,15 @@ set(YAZ0_TEST_DATA_DIR "" CACHE PATH
 add_library(yaz0test STATIC test_driver.c test_utility.c test_corpus.c)
 add_library(yaz0::yaz0test ALIAS yaz0test)
 target_link_libraries(yaz0test PUBLIC yaz0::yaz0_static)
+target_compile_options(yaz0test PRIVATE ${YAZ0_WARNING_FLAGS})
 
 add_executable(test_compress test_compress.c)
 target_link_libraries(test_compress PRIVATE yaz0::yaz0test)
+target_compile_options(test_compress PRIVATE ${YAZ0_WARNING_FLAGS})
 
 add_executable(test_decompress test_decompress.c)
 target_link_libraries(test_decompress PRIVATE yaz0::yaz0test)
-
-if (MSVC)
-    target_compile_options(yaz0test PRIVATE /W4)
-    target_compile_options(test_compress PRIVATE /W4)
-    target_compile_options(test_decompress PRIVATE /W4)
-else ()
-    target_compile_options(yaz0test PRIVATE -Wall -Wextra -Wconversion)
-    target_compile_options(test_compress PRIVATE -Wall -Wextra -Wconversion)
-    target_compile_options(test_decompress PRIVATE -Wall -Wextra -Wconversion)
-endif ()
+target_compile_options(test_decompress PRIVATE ${YAZ0_WARNING_FLAGS})
 
 function(yaz0_add_test YAZ0_TEST_NAME)
     cmake_parse_arguments(ARG "" "COMPRESSED_FILE;DECOMPRESSED_FILE;PADDING;IN_CHUNK;OUT_CHUNK" "" ${ARGN})
@@ -139,11 +132,7 @@ target_link_libraries(test_search
 target_include_directories(test_search
         PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
-if (MSVC)
-    target_compile_options(test_search PRIVATE /W4)
-else ()
-    target_compile_options(test_search PRIVATE -Wall -Wextra -Wconversion)
-endif ()
+target_compile_options(test_search PRIVATE ${YAZ0_WARNING_FLAGS})
 
 function(yaz0_add_search_test name algorithm)
     foreach (corpus_name IN ITEMS ${YAZ0_CORPUS_GENERATORS})
@@ -169,9 +158,4 @@ yaz0_add_search_test("SIMD128" simd128)
 #
 add_executable(yaz0bench yaz0bench.c)
 target_link_libraries(yaz0bench PRIVATE yaz0::yaz0test)
-
-if (MSVC)
-    target_compile_options(yaz0bench PRIVATE /W4)
-else ()
-    target_compile_options(yaz0bench PRIVATE -Wall -Wextra -Wconversion)
-endif ()
+target_compile_options(yaz0bench PRIVATE ${YAZ0_WARNING_FLAGS})

@@ -50,6 +50,18 @@ configure_file(
         ${CMAKE_CURRENT_BINARY_DIR}/include/yaz0/config.h
         @ONLY)
 
+if (MSVC)
+    set(YAZ0_WARNING_FLAGS /W4)
+else ()
+    set(YAZ0_WARNING_FLAGS
+            -Wall -Wextra -Wpedantic
+            -Wconversion -Wsign-conversion
+            -Wshadow -Wcast-qual -Wcast-align -Wwrite-strings
+            -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations
+            -Wold-style-definition -Wredundant-decls
+            -Wundef -Wvla -Wdouble-promotion -Wformat=2 -Wnull-dereference)
+endif ()
+
 if (YAZ0_BUILD_SHARED)
     add_library(yaz0 SHARED
             ${YAZ0_SOURCES}
@@ -71,12 +83,7 @@ if (YAZ0_BUILD_SHARED)
     target_compile_definitions(yaz0 PRIVATE YAZ0_SHARED)
     set_target_properties(yaz0 PROPERTIES C_VISIBILITY_PRESET hidden)
     target_compile_features(yaz0 PUBLIC c_std_99)
-
-    if (MSVC)
-        target_compile_options(yaz0 PRIVATE /W4)
-    else ()
-        target_compile_options(yaz0 PRIVATE -Wall -Wextra -Wconversion)
-    endif ()
+    target_compile_options(yaz0 PRIVATE ${YAZ0_WARNING_FLAGS})
 
     if (NOT YAZ0_ENABLE_SSE2)
         target_compile_definitions(yaz0 PRIVATE YAZ0_DISABLE_SSE2)
@@ -106,12 +113,7 @@ if (YAZ0_BUILD_STATIC OR YAZ0_BUILD_TESTS)
 
     target_compile_definitions(yaz0_static PUBLIC YAZ0_STATIC)
     target_compile_features(yaz0_static PUBLIC c_std_99)
-
-    if (MSVC)
-        target_compile_options(yaz0_static PRIVATE /W4)
-    else ()
-        target_compile_options(yaz0_static PRIVATE -Wall -Wextra -Wconversion)
-    endif ()
+    target_compile_options(yaz0_static PRIVATE ${YAZ0_WARNING_FLAGS})
 
     if (NOT YAZ0_ENABLE_SSE2)
         target_compile_definitions(yaz0_static PRIVATE YAZ0_DISABLE_SSE2)
