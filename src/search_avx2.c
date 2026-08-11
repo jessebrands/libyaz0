@@ -24,6 +24,8 @@
 
 #include "search.h"
 
+#if YAZ0_HAVE_AVX2
+
 #if defined _MSC_VER
 #  include <intrin.h>
 #else
@@ -58,46 +60,6 @@ yaz0_xgetbv0(void) {
 #endif
 }
 
-bool
-yaz0_search_avx2_supported(void) {
-#if !YAZ0_HAVE_AVX2
-    return false;
-#else
-    uint32_t eax, ebx, ecx, edx;
-
-    // Check leaf 7 for AVX2 bit
-    if (!yaz0_cpuid_count(0, 0, &eax, &ebx, &ecx, &edx) || eax < 7) {
-        return false;
-    }
-    if (!yaz0_cpuid_count(1, 0, &eax, &ebx, &ecx, &edx)) {
-        return false;
-    }
-
-    // Test that the OS enabled XSAVE, or XGETBV is bad bad bad
-    if ((ecx & (1u << 27)) == 0) {
-        return false;
-    }
-
-    // Do we have AVX?
-    if ((ecx & (1u << 28)) == 0) {
-        return false;
-    }
-
-    // XCR0 bits 1 and 2 are the SSE and YMM state. Without both, the OS does
-    // not preserve ymm registers across a context switch and using them
-    // corrupts state rather than faulting cleanly.
-    if ((yaz0_xgetbv0() & 0x6u) != 0x6u) {
-        return false;
-    }
-    if (!yaz0_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx)) {
-        return false;
-    }
-
-    // If this passes, we have AVX2 \o/
-    return (ebx & (1u << 5)) != 0;
-#endif
-}
-
 static inline unsigned
 yaz0_ctz32(uint32_t const mask) {
     assert(mask != 0);
@@ -115,8 +77,6 @@ yaz0_ctz32(uint32_t const mask) {
     return i;
 #endif
 }
-
-#if YAZ0_HAVE_AVX2
 
 #include <immintrin.h>
 
@@ -210,4 +170,44 @@ yaz0_search_avx2(uint8_t const* data, size_t const start_pos,
     return (longest_run >= YAZ0_MIN_MATCH) ? longest_run : 0;
 }
 
+#endif // YAZ0_HAVE_AVX2
+
+bool
+yaz0_search_avx2_supported(void) {
+#if !YAZ0_HAVE_AVX2
+    return false;
+#else
+    uint32_t eax, ebx, ecx, edx;
+
+    // Check leaf 7 for AVX2 bit
+    if (!yaz0_cpuid_count(0, 0, &eax, &ebx, &ecx, &edx) || eax < 7) {
+        return false;
+    }
+    if (!yaz0_cpuid_count(1, 0, &eax, &ebx, &ecx, &edx)) {
+        return false;
+    }
+
+    // Test that the OS enabled XSAVE, or XGETBV is bad bad bad
+    if ((ecx & (1u << 27)) == 0) {
+        return false;
+    }
+
+    // Do we have AVX?
+    if ((ecx & (1u << 28)) == 0) {
+        return false;
+    }
+
+    // XCR0 bits 1 and 2 are the SSE and YMM state. Without both, the OS does
+    // not preserve ymm registers across a context switch and using them
+    // corrupts state rather than faulting cleanly.
+    if ((yaz0_xgetbv0() & 0x6u) != 0x6u) {
+        return false;
+    }
+    if (!yaz0_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx)) {
+        return false;
+    }
+
+    // If this passes, we have AVX2 \o/
+    return (ebx & (1u << 5)) != 0;
 #endif
+}
