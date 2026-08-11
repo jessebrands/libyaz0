@@ -147,7 +147,7 @@ parse_common_option(char const* arg, char const* value,
     return false;
 }
 
-bool
+static bool
 parse_file_args(int argc, char** argv, struct test_fixture* fixture) {
     char const* in_filename = NULL;
     char const* expected_filename = NULL;
