@@ -24,6 +24,40 @@
 #include "search.h"
 
 size_t
+yaz0_length_reference(uint8_t const* a, uint8_t const* b, size_t const max_lookahead) {
+    size_t i = 0;
+    while (i < max_lookahead && a[i] == b[i]) {
+        ++i;
+    }
+    return i;
+}
+
+size_t
+yaz0_search_reference(uint8_t const* data, size_t const start_pos, size_t const offset,
+                      size_t const max_lookahead, size_t* match_pos) {
+    size_t longest_run = 0;
+
+    for (size_t i = start_pos; i < offset; ++i) {
+        size_t const run_length = yaz0_length_reference(&data[i], &data[offset], max_lookahead);
+        if (run_length > longest_run) {
+            *match_pos = i;
+            longest_run = run_length;
+
+            if (run_length == max_lookahead) {
+                break;
+            }
+        }
+    }
+
+    return longest_run;
+}
+
+static bool
+yaz0_search_reference_supported(void) {
+    return true;
+}
+
+size_t
 yaz0_length_scalar(uint8_t const* a, uint8_t const* b, size_t const max_lookahead) {
     size_t i = 0;
     // If we have the headroom for it, we can scan 8 bytes at a time.
@@ -92,6 +126,7 @@ static struct yaz0_search_impl const implementations[] = {
     {YAZ0_SEARCH_SSE2, "sse2", yaz0_search_sse2, yaz0_search_sse2_supported},
 #endif
     {YAZ0_SEARCH_SCALAR, "scalar", yaz0_search_scalar, yaz0_search_scalar_supported},
+    {YAZ0_SEARCH_REFERENCE, "reference", yaz0_search_reference, yaz0_search_reference_supported},
 };
 
 #define YAZ0_SEARCH_IMPL_COUNT (sizeof implementations / sizeof implementations[0])

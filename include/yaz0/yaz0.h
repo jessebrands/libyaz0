@@ -135,11 +135,26 @@ enum yaz0_search {
     //! Let the library pick the fastest implementation available.
     YAZ0_SEARCH_AUTO = 0,
 
-    //! Fast, portable scalar implementation available on all hardware.
-    YAZ0_SEARCH_SCALAR = 1,
+    //! Correct but slow reference implementation.
+    YAZ0_SEARCH_REFERENCE = 1,
 
-    //! Very fast vectorized searching using SSE2
-    YAZ0_SEARCH_SSE2 = 2,
+    //! Fast, portable scalar implementation available on all hardware.
+    YAZ0_SEARCH_SCALAR = 2,
+
+    //! Very fast vectorized search using SSE2
+    YAZ0_SEARCH_SSE2 = 3,
+
+    //! Vectorized search using AVX2 instructions (unimplemented)
+    YAZ0_SEARCH_AVX2 = 4,
+
+    //! Vectorized search using AVX512 instructions (unimplemented)
+    YAZ0_SEARCH_AVX512 = 5,
+
+    //! Vectorized search using ARM NEON instructions (unimplemented)
+    YAZ0_SEARCH_NEON = 6,
+
+    //! Vectorized search using WebAssembly SIMD128 (unimplemented)
+    YAZ0_SEARCH_SIMD128 = 7,
 };
 
 /*!
