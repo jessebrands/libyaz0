@@ -26,7 +26,6 @@
 
 #if defined _MSC_VER
 #  include <intrin.h>
-#  include <immintrin.h>
 #else
 #  include <cpuid.h>
 #endif
@@ -118,6 +117,8 @@ yaz0_ctz32(uint32_t const mask) {
 }
 
 #if YAZ0_HAVE_AVX2
+
+#include <immintrin.h>
 
 static inline size_t
 yaz0_length_avx2(uint8_t const* a, uint8_t const* b, size_t const max_lookahead) {
