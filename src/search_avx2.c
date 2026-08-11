@@ -143,25 +143,27 @@ yaz0_search_avx2(uint8_t const* data, size_t const start_pos,
     assert(data != NULL);
     assert(start_pos <= offset);
     assert(match_pos != NULL);
+    assert(max_lookahead >= YAZ0_MIN_MATCH);
 
     size_t longest_run = 0;
 
     __m256i const first = _mm256_set1_epi8((char) data[offset]);
-    __m256i want = first;
+
+    // Anything less than the minimum match is pointless.
+    size_t want_offset = YAZ0_MIN_MATCH - 1;
+    __m256i want = _mm256_set1_epi8((char) data[offset + want_offset]);
 
     size_t const tail_start = offset - ((offset - start_pos) & (size_t) 31);
 
     size_t i = start_pos;
     for (; i < tail_start; i += 32) {
         __m256i const head = _mm256_loadu_si256((__m256i const*) &data[i]);
-        __m256i const tail = _mm256_loadu_si256((__m256i const*) &data[i + longest_run]);
+        __m256i const tail = _mm256_loadu_si256((__m256i const*) &data[i + want_offset]);
         __m256i const hit = _mm256_and_si256(_mm256_cmpeq_epi8(head, first), _mm256_cmpeq_epi8(tail, want));
 
         uint32_t mask = (uint32_t) _mm256_movemask_epi8(hit);
         while (mask != 0) {
             size_t const pos = i + yaz0_ctz32(mask);
-            mask &= mask - 1;
-
             size_t const run_length = yaz0_length_avx2(&data[pos], &data[offset], max_lookahead);
             if (run_length > longest_run) {
                 *match_pos = pos;
@@ -171,11 +173,18 @@ yaz0_search_avx2(uint8_t const* data, size_t const start_pos,
                     return longest_run;
                 }
 
-                want = _mm256_set1_epi8((char) data[offset + longest_run]);
+                want_offset = (longest_run < YAZ0_MIN_MATCH - 1)
+                                  ? (size_t) (YAZ0_MIN_MATCH - 1)
+                                  : longest_run;
+
+                want = _mm256_set1_epi8((char) data[offset + want_offset]);
             }
+
+            mask &= mask - 1;
         }
     }
 
+    // The remaining candidates are scanned one at a time.
     for (; i < offset; ++i) {
         if (data[i] != data[offset]) {
             continue;
@@ -195,5 +204,5 @@ yaz0_search_avx2(uint8_t const* data, size_t const start_pos,
         }
     }
 
-    return longest_run;
+    return (longest_run >= YAZ0_MIN_MATCH) ? longest_run : 0;
 }

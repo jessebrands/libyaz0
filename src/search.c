@@ -49,7 +49,7 @@ yaz0_search_reference(uint8_t const* data, size_t const start_pos, size_t const 
         }
     }
 
-    return longest_run;
+    return (longest_run >= YAZ0_MIN_MATCH) ? longest_run : 0;
 }
 
 static bool
@@ -113,7 +113,7 @@ yaz0_search_scalar(uint8_t const* data, size_t const start_pos,
         }
     }
 
-    return longest_run;
+    return (longest_run >= YAZ0_MIN_MATCH) ? longest_run : 0;
 }
 
 static bool

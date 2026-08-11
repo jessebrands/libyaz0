@@ -166,7 +166,7 @@ yaz0_search_sse2(uint8_t const* data, size_t const start_pos,
         }
     }
 
-    return longest_run;
+    return (longest_run >= YAZ0_MIN_MATCH) ? longest_run : 0;
 }
 
 #endif // YAZ0_HAVE_SSE2
