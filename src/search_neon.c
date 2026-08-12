@@ -121,6 +121,13 @@ yaz0_search_neon(uint8_t const *data, size_t const start_pos, size_t const offse
 
     size_t longest_run = 0;
 
+    // Weights for the mask4
+    static uint8_t const weights[16] = {
+        0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
+        0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
+    };
+    uint8x16_t const mask4_bits = vld1q_u8(weights);
+
     // Every candidate must at minimum match the first byte at the offset.
     uint8x16_t const first = vdupq_n_u8(data[offset]);
 
@@ -163,20 +170,8 @@ yaz0_search_neon(uint8_t const *data, size_t const start_pos, size_t const offse
         uint8x16_t const hit2 = vandq_u8(vceqq_u8(head2, first), vceqq_u8(tail2, want));
         uint8x16_t const hit3 = vandq_u8(vceqq_u8(head3, first), vceqq_u8(tail3, want));
 
-        // OR everything together. If the result is zero, we can skip these 64 bytes.
-        // This is the best case scenario, cause it means we can avoid paying for
-        // 4 expensive register transfers.
-        uint8x16_t const any = vorrq_u8(vorrq_u8(hit0, hit1), vorrq_u8(hit2, hit3));
-        if (vmaxvq_u8(any) == 0) {
-            continue;
-        }
-
         // Turns out I didn't come up with this first, SIMDJSON does this too.
-        static uint8_t const weights[16] = {
-            0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
-            0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
-        };
-        uint64_t mask = yaz0_move_mask4(vld1q_u8(weights), hit0, hit1, hit2, hit3);
+        uint64_t mask = yaz0_move_mask4(mask4_bits, hit0, hit1, hit2, hit3);
 
         while (mask != 0) {
             size_t const pos = i + yaz0_ctz64(mask);
