@@ -40,6 +40,12 @@
 #  define YAZ0_TARGET_X86 0
 #endif
 
+#if defined __aarch64__ || defined _M_ARM64
+#  define YAZ0_TARGET_AARCH64 1
+#else
+#  define YAZ0_TARGET_AARCH64 0
+#endif
+
 #if defined __wasm__
 #  define YAZ0_TARGET_WASM 1
 #else
@@ -56,6 +62,12 @@
 #  define YAZ0_HAVE_AVX2 1
 #else
 #  define YAZ0_HAVE_AVX2 0
+#endif
+
+#if YAZ0_TARGET_AARCH64 && !defined YAZ0_DISABLE_NEON
+#  define YAZ0_HAVE_NEON 1
+#else
+#  define YAZ0_HAVE_NEON 0
 #endif
 
 #if YAZ0_TARGET_WASM && !defined YAZ0_DISABLE_SIMD128

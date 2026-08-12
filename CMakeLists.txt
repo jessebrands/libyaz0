@@ -18,6 +18,7 @@ option(YAZ0_INSTALL "Enable installation of libyaz0" ${PROJECT_IS_TOP_LEVEL})
 
 option(YAZ0_ENABLE_SSE2 "Enable the SSE2 search implementation on x86" ON)
 option(YAZ0_ENABLE_AVX2 "Enable the AVX2 search implementation on x86" ON)
+option(YAZ0_ENABLE_NEON "Enable ARM Neon search implementation on AArch64" ON)
 option(YAZ0_ENABLE_SIMD128 "Enable the SIMD128 search implementation on WebAssembly" ON)
 
 set(YAZ0_PUBLIC_HEADERS
@@ -38,6 +39,7 @@ set(YAZ0_SOURCES
         src/decompress.c
         src/search.c
         src/search_avx2.c
+        src/search_neon.c
         src/search_simd128.c
         src/search_sse2.c
         src/search_swar64.c
@@ -74,6 +76,9 @@ if (NOT YAZ0_ENABLE_SSE2)
 endif ()
 if (NOT YAZ0_ENABLE_AVX2)
     list(APPEND YAZ0_SIMD_DEFINITIONS YAZ0_DISABLE_AVX2)
+endif ()
+if (NOT YAZ0_ENABLE_NEON)
+    list(APPEND YAZ0_SIMD_DEFINITIONS YAZ0_DISABLE_NEON)
 endif ()
 if (NOT YAZ0_ENABLE_SIMD128)
     list(APPEND YAZ0_SIMD_DEFINITIONS YAZ0_DISABLE_SIMD128)

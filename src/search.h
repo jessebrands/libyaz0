@@ -100,6 +100,15 @@ yaz0_search_avx2(uint8_t const* data, size_t start_pos,
 bool
 yaz0_search_avx2_supported(void);
 
+#if YAZ0_HAVE_NEON
+size_t
+yaz0_search_neon(uint8_t const* data, size_t start_pos, size_t offset,
+                 size_t max_lookahead, size_t* match_pos);
+#endif
+
+bool
+yaz0_search_neon_supported(void);
+
 #if YAZ0_HAVE_SIMD128
 size_t
 yaz0_search_simd128(uint8_t const* data, size_t start_pos, size_t offset,

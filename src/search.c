@@ -129,6 +129,10 @@ static struct yaz0_search_impl const implementations[] = {
     {YAZ0_SEARCH_SSE2, "sse2", yaz0_search_sse2, yaz0_search_sse2_supported},
 #endif
 
+#if YAZ0_HAVE_NEON
+    {YAZ0_SEARCH_NEON, "neon", yaz0_search_neon, yaz0_search_neon_supported},
+#endif
+
 #if YAZ0_HAVE_SIMD128
     {YAZ0_SEARCH_SIMD128, "simd128", yaz0_search_simd128, yaz0_search_simd128_supported},
 #endif
