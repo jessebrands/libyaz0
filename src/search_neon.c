@@ -148,12 +148,20 @@ yaz0_search_neon(uint8_t const *data, size_t const start_pos, size_t const offse
         //   me: mom, can we have AVX512?
         //  mom: we have AVX512 at home
         //  AVX512 at home:
-        uint8x16x4_t const head = vld1q_u8_x4(&data[i]);
-        uint8x16x4_t const tail = vld1q_u8_x4(&data[i + want_offset]);
-        uint8x16_t const hit0 = vandq_u8(vceqq_u8(head.val[0], first), vceqq_u8(tail.val[0], want));
-        uint8x16_t const hit1 = vandq_u8(vceqq_u8(head.val[1], first), vceqq_u8(tail.val[1], want));
-        uint8x16_t const hit2 = vandq_u8(vceqq_u8(head.val[2], first), vceqq_u8(tail.val[2], want));
-        uint8x16_t const hit3 = vandq_u8(vceqq_u8(head.val[3], first), vceqq_u8(tail.val[3], want));
+        uint8x16_t const head0 = vld1q_u8(&data[i]);
+        uint8x16_t const head1 = vld1q_u8(&data[i + 16]);
+        uint8x16_t const head2 = vld1q_u8(&data[i + 32]);
+        uint8x16_t const head3 = vld1q_u8(&data[i + 48]);
+
+        uint8x16_t const tail0 = vld1q_u8(&data[i + want_offset]);
+        uint8x16_t const tail1 = vld1q_u8(&data[i + want_offset + 16]);
+        uint8x16_t const tail2 = vld1q_u8(&data[i + want_offset + 32]);
+        uint8x16_t const tail3 = vld1q_u8(&data[i + want_offset + 48]);
+
+        uint8x16_t const hit0 = vandq_u8(vceqq_u8(head0, first), vceqq_u8(tail0, want));
+        uint8x16_t const hit1 = vandq_u8(vceqq_u8(head1, first), vceqq_u8(tail1, want));
+        uint8x16_t const hit2 = vandq_u8(vceqq_u8(head2, first), vceqq_u8(tail2, want));
+        uint8x16_t const hit3 = vandq_u8(vceqq_u8(head3, first), vceqq_u8(tail3, want));
 
         // OR everything together. If the result is zero, we can skip these 64 bytes.
         // This is the best case scenario, cause it means we can avoid paying for
