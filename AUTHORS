@@ -5,4 +5,5 @@ Jesse Gerard Brands <jesse@jgbrands.nl>
     * Author and maintainer.
     * SSE2 search kernel.
     * AVX2 search kernel.
+    * ARM Neon search kernel.
     * Testing and benchmarking suite.

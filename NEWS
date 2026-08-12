@@ -1,3 +1,16 @@
+Version 1.1.2 -- 2026-08-12
+
+    This release introduces support for ARM Neon.
+
+  Features
+
+    * New ARM Neon kernel for AArch64-based machines like Apple M1 and later
+      based machines. It's very fast, with performance sitting somewhere around
+      AVX2 levels, perhaps the most optimized kernel in the library!
+      On a M1 Max MacBook Pro it compresses all of OOT 1.0 US in about 3.5
+      seconds! Wow!
+
+
 Version 1.1.1 -- 2026-08-12
 
     This release introduces a SIMD128 kernel.
