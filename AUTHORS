@@ -4,5 +4,5 @@ Please add yourself to the bottom of the list when contributing changes.
 Jesse Gerard Brands <jesse@jgbrands.nl>
     * Author and maintainer.
     * SSE2 search kernel.
-    * AVX2 saerch kernel.
+    * AVX2 search kernel.
     * Testing and benchmarking suite.
