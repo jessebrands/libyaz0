@@ -117,8 +117,70 @@ yaz0_search_neon(uint8_t const *data, size_t const start_pos, size_t const offse
     uint8x16_t want = vdupq_n_u8(data[offset + want_offset]);
 
     size_t const tail_start = offset - ((offset - start_pos) & (size_t) 15);
+    size_t const wide_end = offset - ((offset - start_pos) & (size_t) 63);
 
     size_t i = start_pos;
+    for (; i < wide_end; i += 64) {
+        // Hypothesis: vget_lane is expensive, what about amortizing it?
+        //
+        // it could work but my concern is that I'm just gonna pay for 4 expensive
+        // transfers instead since the odds of finding a hit in 64 bytes seems high.
+        // I guess future me will find out.
+        //
+        // Future me here: it works.
+        // Of course this works. I'm gonna pay for these transfers one way or
+        // another. LOL We're just checking if we can skip this at all.
+        //
+        // also mandatory joke:
+        //   me: mom, can we have AVX512?
+        //  mom: we have AVX512 at home
+        //  AVX512 at home:
+        uint8x16x4_t const head = vld1q_u8_x4(&data[i]);
+        uint8x16x4_t const tail = vld1q_u8_x4(&data[i + want_offset]);
+        uint8x16_t const hit0 = vandq_u8(vceqq_u8(head.val[0], first), vceqq_u8(tail.val[0], want));
+        uint8x16_t const hit1 = vandq_u8(vceqq_u8(head.val[1], first), vceqq_u8(tail.val[1], want));
+        uint8x16_t const hit2 = vandq_u8(vceqq_u8(head.val[2], first), vceqq_u8(tail.val[2], want));
+        uint8x16_t const hit3 = vandq_u8(vceqq_u8(head.val[3], first), vceqq_u8(tail.val[3], want));
+
+        // OR everything together. If the result is zero, we can skip these 64 bytes.
+        // This is the best case scenario, cause it means we can avoid paying for
+        // 4 expensive register transfers.
+        uint8x16_t const any = vorrq_u8(vorrq_u8(hit0, hit1), vorrq_u8(hit2, hit3));
+        if (vmaxvq_u8(any) == 0) {
+            continue;
+        }
+
+        // Now we pay the cost of 4 loads at once, but hopefully we can avoid that most of the time?
+        uint8x16_t const hits[4] = {hit0, hit1, hit2, hit3};
+        for (unsigned b = 0; b < 4; ++b) {
+            size_t const base = i + b * 16u;
+            uint64_t mask = yaz0_move_mask(hits[b]);
+
+            while (mask != 0) {
+                unsigned const bit = yaz0_ctz64(mask);
+                size_t const pos = base + (bit >> 2);
+
+                size_t const run_length = yaz0_length_neon(&data[pos], &data[offset], max_lookahead);
+                if (run_length > longest_run) {
+                    *match_pos = pos;
+                    longest_run = run_length;
+                    if (run_length == max_lookahead) {
+                        return longest_run;
+                    }
+                    want_offset = (longest_run < YAZ0_MIN_MATCH - 1)
+                                      ? (size_t) (YAZ0_MIN_MATCH - 1)
+                                      : longest_run;
+
+                    want = vdupq_n_u8(data[offset + want_offset]);
+                }
+
+                mask &= ~(UINT64_C(0xF) << bit);
+            }
+        }
+    }
+
+    // Bit k is the candidate at data[i + k], so taking the lowest set bit
+    // first keeps the earliest position winning ties.
     for (; i < tail_start; i += 16) {
         // Ok, ok, we can do this. This is just like SSE2! :D
         uint8x16_t const head = vld1q_u8(&data[i]);
@@ -127,9 +189,6 @@ yaz0_search_neon(uint8_t const *data, size_t const start_pos, size_t const offse
 
         // ahh... fuck
         uint64_t mask = yaz0_move_mask(hit);
-
-        // Bit k is the candidate at data[i + k], so taking the lowest set bit
-        // first keeps the earliest position winning ties.
         while (mask != 0) {
             unsigned const bit = yaz0_ctz64(mask);
             size_t const pos = i + (bit >> 2);
