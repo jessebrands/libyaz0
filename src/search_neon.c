@@ -155,6 +155,18 @@ yaz0_search_neon(uint8_t const *data, size_t const start_pos, size_t const offse
         //   me: mom, can we have AVX512?
         //  mom: we have AVX512 at home
         //  AVX512 at home:
+
+        //
+        // Hello, future maintainers!!
+        //
+        // I can hear you scream: but Spell, why didn't you use vld1q_u8_x4?
+        // Go ahead and try and run the bench. It sounds like such a good idea,
+        // but it doesn't work.  vld1q_u8_x4 needs 8 aligned registers, and
+        // we would do it twice. It's about 10% slower in reality on a M1 chip
+        // and worse on other platforms.
+        //
+        // This is intentional, just leave it!
+        //
         uint8x16_t const head0 = vld1q_u8(&data[i]);
         uint8x16_t const head1 = vld1q_u8(&data[i + 16]);
         uint8x16_t const head2 = vld1q_u8(&data[i + 32]);
