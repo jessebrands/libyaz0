@@ -64,6 +64,19 @@ yaz0_move_mask(uint8x16_t const cmp) {
     return vget_lane_u64(vreinterpret_u64_u8(narrowed), 0);
 }
 
+static inline uint64_t
+yaz0_move_mask4(uint8x16_t const bits,
+                uint8x16_t const a, uint8x16_t const b,
+                uint8x16_t const c, uint8x16_t const d) {
+    uint8x16_t e = vpaddq_u8(vandq_u8(a, bits), vandq_u8(b, bits));
+    uint8x16_t f = vpaddq_u8(vandq_u8(c, bits), vandq_u8(d, bits));
+
+    e = vpaddq_u8(e, f);
+    e = vpaddq_u8(e, e);
+
+    return vgetq_lane_u64(vreinterpretq_u64_u8(e), 0);
+}
+
 static inline size_t
 yaz0_length_neon(uint8_t const *a, uint8_t const *b, size_t const max_lookahead) {
     size_t i = 0;
@@ -150,32 +163,31 @@ yaz0_search_neon(uint8_t const *data, size_t const start_pos, size_t const offse
             continue;
         }
 
-        // Now we pay the cost of 4 loads at once, but hopefully we can avoid that most of the time?
-        uint8x16_t const hits[4] = {hit0, hit1, hit2, hit3};
-        for (unsigned b = 0; b < 4; ++b) {
-            size_t const base = i + b * 16u;
-            uint64_t mask = yaz0_move_mask(hits[b]);
+        // Turns out I didn't come up with this first, SIMDJSON does this too.
+        static uint8_t const weights[16] = {
+            0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
+            0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
+        };
+        uint64_t mask = yaz0_move_mask4(vld1q_u8(weights), hit0, hit1, hit2, hit3);
 
-            while (mask != 0) {
-                unsigned const bit = yaz0_ctz64(mask);
-                size_t const pos = base + (bit >> 2);
+        while (mask != 0) {
+            size_t const pos = i + yaz0_ctz64(mask);
 
-                size_t const run_length = yaz0_length_neon(&data[pos], &data[offset], max_lookahead);
-                if (run_length > longest_run) {
-                    *match_pos = pos;
-                    longest_run = run_length;
-                    if (run_length == max_lookahead) {
-                        return longest_run;
-                    }
-                    want_offset = (longest_run < YAZ0_MIN_MATCH - 1)
-                                      ? (size_t) (YAZ0_MIN_MATCH - 1)
-                                      : longest_run;
-
-                    want = vdupq_n_u8(data[offset + want_offset]);
+            size_t const run_length = yaz0_length_neon(&data[pos], &data[offset], max_lookahead);
+            if (run_length > longest_run) {
+                *match_pos = pos;
+                longest_run = run_length;
+                if (run_length == max_lookahead) {
+                    return longest_run;
                 }
 
-                mask &= ~(UINT64_C(0xF) << bit);
+                want_offset = (longest_run < YAZ0_MIN_MATCH - 1)
+                                  ? (size_t) (YAZ0_MIN_MATCH - 1)
+                                  : longest_run;
+                want = vdupq_n_u8(data[offset + want_offset]);
             }
+
+            mask &= mask - 1;
         }
     }
 
