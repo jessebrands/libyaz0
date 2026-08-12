@@ -1,3 +1,13 @@
+Version 1.1.1 -- 2026-08-12
+
+    This release introduces a SIMD128 kernel.
+
+  Features
+
+    * Massively increased performance for WebAssembly targets, offering
+      performance that is on par with SSE2.
+
+
 Version 1.1 -- 2026-08-12
 
     This release introduces a SWAR64 kernel.
