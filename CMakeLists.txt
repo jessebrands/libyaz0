@@ -30,6 +30,7 @@ set(YAZ0_PRIVATE_HEADERS
         src/compress.h
         src/cpu.h
         src/decompress.h
+        src/matcher.h
         src/search.h
         src/stream.h)
 
@@ -39,6 +40,8 @@ set(YAZ0_SOURCES
         src/compress.c
         src/cpu.c
         src/decompress.c
+        src/matcher.c
+        src/matcher_std.c
         src/search.c
         src/search_avx2.c
         src/search_neon.c

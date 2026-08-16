@@ -22,6 +22,7 @@
 #define LIBYAZ0_COMPRESS_H
 
 #include "common.h"
+#include "matcher.h"
 #include "search.h"
 #include "yaz0/yaz0.h"
 
@@ -40,7 +41,17 @@ struct yaz0_compress_state {
    struct yaz0_common_state common;
    enum yaz0_compress_mode mode;
    enum yaz0_result error;
-   struct yaz0_search_impl const* search;
+
+   struct yaz0_matcher_impl const* matcher;
+
+   //! Aligned pointer handed to the matcher, and the raw allocation backing
+   //! it. They differ when a matcher asks for stricter alignment than the
+   //! allocator guarantees.
+   void* matcher_state;
+   void* matcher_alloc;
+
+   //! Search implementation the matcher resolved to, for reporting.
+   enum yaz0_search search_id;
 
    size_t search_distance;
    uint32_t uncompressed_size;
@@ -56,10 +67,6 @@ struct yaz0_compress_state {
 
    size_t match_distance;
    size_t match_length;
-
-   bool deferred;
-   size_t deferred_distance;
-   size_t deferred_length;
 
    uint8_t block[YAZ0_MAX_BLOCK_SIZE];
    size_t block_pos;

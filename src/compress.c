@@ -20,6 +20,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "compress.h"
@@ -52,13 +53,60 @@ compress_validate_options(struct yaz0_compress_options const* options) {
     return YAZ0_OK;
 }
 
-static void
-compress_configure(struct yaz0_compress_state* state, uint32_t const uncompressed_size,
+static enum yaz0_result
+compress_configure_matcher(struct yaz0_compress_state* state,
+                           struct yaz0_matcher_config const* cfg) {
+    struct yaz0_matcher_impl const* const matcher = yaz0_matcher_select(cfg);
+    if (matcher == NULL) {
+        return YAZ0_UNSUPPORTED;
+    }
+
+    if (state->matcher != matcher) {
+        yaz0_free(state->common.stream, state->matcher_alloc);
+        state->matcher_alloc = NULL;
+        state->matcher_state = NULL;
+    }
+
+    size_t const want = matcher->state_size();
+    if (want > 0 && state->matcher_alloc == NULL) {
+        size_t const align = matcher->state_align();
+
+        state->matcher_alloc = yaz0_alloc(state->common.stream, want + align - 1);
+        if (state->matcher_alloc == NULL) {
+            return YAZ0_MEMORY_ERROR;
+        }
+
+        uintptr_t const raw = (uintptr_t) state->matcher_alloc;
+        state->matcher_state = (void*) ((raw + (align - 1)) & ~(uintptr_t) (align - 1));
+    }
+
+    state->matcher = matcher;
+    matcher->init(state->matcher_state, cfg);
+
+    return YAZ0_OK;
+}
+
+static enum yaz0_result
+compress_configure(struct yaz0_compress_state* state,
+                   uint32_t const uncompressed_size,
                    struct yaz0_compress_options const* options) {
     state->mode = YAZ0_COMPRESS_HEADER;
     state->error = YAZ0_OK;
     state->search_distance = compress_search_distance(options->level);
-    state->search = yaz0_search_select(options->search);
+
+    struct yaz0_search_impl const* const impl = yaz0_search_select(options->search);
+    state->search_id = (impl != NULL) ? impl->id : YAZ0_SEARCH_AUTO;
+
+    struct yaz0_matcher_config const cfg = {
+        .max_distance = state->search_distance,
+        .uncompressed_size = uncompressed_size,
+        .search = options->search,
+    };
+
+    enum yaz0_result const configured = compress_configure_matcher(state, &cfg);
+    if (configured != YAZ0_OK) {
+        return configured;
+    }
 
     state->uncompressed_size = uncompressed_size;
     state->alignment = options->alignment;
@@ -69,14 +117,13 @@ compress_configure(struct yaz0_compress_state* state, uint32_t const uncompresse
     state->window_size = 0;
     state->match_distance = 0;
     state->match_length = 0;
-    state->deferred = false;
-    state->deferred_distance = 0;
-    state->deferred_length = 0;
 
     memset(state->block, 0, sizeof state->block);
     state->block_pos = 1;
     state->block_out = 0;
     state->block_tokens = 0;
+
+    return YAZ0_OK;
 }
 
 static struct yaz0_compress_state*
@@ -159,6 +206,7 @@ compress_slide_window(struct yaz0_compress_state* state) {
     memmove(state->window, &state->window[drop], state->window_size - drop);
     state->window_pos -= drop;
     state->window_size -= drop;
+    state->matcher->slide(state->matcher_state, drop);
 }
 
 static enum yaz0_step
@@ -189,80 +237,35 @@ compress_fill(struct yaz0_compress_state* state, enum yaz0_flush const flush, en
     return compress_continue(state, YAZ0_COMPRESS_FLUSH, result);
 }
 
-static bool
-compress_search(struct yaz0_compress_state* state, size_t const position,
-                size_t* match_distance, size_t* match_length) {
-    *match_distance = 0;
-    *match_length = 1;
-
-    assert(position < state->window_size);
-    size_t lookahead = state->window_size - position;
-    if (lookahead > YAZ0_MAX_MATCH) {
-        lookahead = YAZ0_MAX_MATCH;
-    }
-
-    if (state->search_distance == 0 || lookahead < YAZ0_MIN_MATCH) {
-        return false;
-    }
-
-    size_t start_pos = 0;
-    if (position > state->search_distance) {
-        start_pos = position - (state->search_distance + 1);
-    }
-
-    size_t match_pos = 0;
-    size_t const length = state->search->search(state->window, start_pos, position, lookahead, &match_pos);
-    if (length > 0) {
-        *match_distance = position - match_pos - 1;
-        *match_length = length;
-    }
-
-    return true;
-}
-
 static enum yaz0_step
 compress_find_match(struct yaz0_compress_state* state, enum yaz0_result* result) {
-    if (state->deferred) {
-        state->deferred = false;
-        state->match_distance = state->deferred_distance;
-        state->match_length = state->deferred_length;
-        return compress_continue(state, YAZ0_COMPRESS_EMIT, result);
-    }
-
-    bool has_searched = compress_search(
-        state, state->window_pos,
-        &state->match_distance,
-        &state->match_length
+    struct yaz0_token const token = state->matcher->find(
+        state->matcher_state,
+        state->window,
+        state->window_size,
+        state->window_pos
     );
 
-    if (!has_searched) {
-        return compress_continue(state, YAZ0_COMPRESS_EMIT, result);
-    }
-
-    if (state->match_length >= YAZ0_MIN_MATCH) {
-        has_searched = compress_search(
-            state, state->window_pos + 1,
-            &state->deferred_distance,
-            &state->deferred_length
-        );
-        if (!has_searched) {
-            return compress_continue(state, YAZ0_COMPRESS_EMIT, result);
-        }
-
-        if (state->deferred_length >= state->match_length + 2) {
-            state->deferred = true;
-            state->match_length = 1;
-            state->match_distance = state->deferred_distance;
+    assert(token.length == 1 || (token.length >= YAZ0_MIN_MATCH && token.length <= YAZ0_MAX_MATCH));
+    assert(state->window_pos + token.length <= state->window_size);
+    if (token.length >= YAZ0_MIN_MATCH) {
+        assert(token.distance >= 1 && token.distance <= YAZ0_MAX_DISTANCE);
+        assert(token.distance <= state->window_pos);
+        for (size_t i = 0; i < token.length; ++i) {
+            assert(state->window[state->window_pos + i]
+                == state->window[state->window_pos - token.distance + i]);
         }
     }
 
+    state->match_length = token.length;
+    state->match_distance = token.distance;
     return compress_continue(state, YAZ0_COMPRESS_EMIT, result);
 }
 
 static enum yaz0_step
 compress_emit(struct yaz0_compress_state* state, enum yaz0_result* result) {
     size_t const l = state->match_length;
-    size_t const d = state->match_distance;
+    size_t const d = (l < YAZ0_MIN_MATCH) ? 0 : state->match_distance - YAZ0_DISTANCE_BIAS;
     size_t const consumed = (l < YAZ0_MIN_MATCH) ? 1 : l;
 
     if (consumed > state->window_size - state->window_pos) {
@@ -436,7 +439,18 @@ yaz0_compress_init_with_options(struct yaz0_stream* stream, uint32_t const uncom
     state->common.alloc = stream->alloc;
     state->common.free = stream->free;
 
-    compress_configure(state, uncompressed_size, &options);
+    // The allocation is not zeroed, and configuring the matcher inspects
+    // these to decide whether it can reuse an existing block.
+    state->matcher = NULL;
+    state->matcher_state = NULL;
+    state->matcher_alloc = NULL;
+
+    enum yaz0_result const configured = compress_configure(state, uncompressed_size, &options);
+    if (configured != YAZ0_OK) {
+        yaz0_free(stream, stream->state);
+        stream->state = NULL;
+        return configured;
+    }
 
     return YAZ0_OK;
 }
@@ -448,6 +462,7 @@ yaz0_compress_end(struct yaz0_stream* stream) {
         return;
     }
 
+    yaz0_free(stream, state->matcher_alloc);
     yaz0_free(stream, stream->state);
     stream->state = NULL;
 }
@@ -468,9 +483,7 @@ yaz0_compress_reset(struct yaz0_stream* stream, uint32_t const uncompressed_size
     stream->total_in = 0;
     stream->total_out = 0;
 
-    compress_configure(state, uncompressed_size, &options);
-
-    return YAZ0_OK;
+    return compress_configure(state, uncompressed_size, &options);
 }
 
 enum yaz0_search
@@ -480,7 +493,7 @@ yaz0_compress_search(struct yaz0_stream const* stream) {
         return YAZ0_SEARCH_AUTO;
     }
 
-    return state->search->id;
+    return state->search_id;
 }
 
 size_t
