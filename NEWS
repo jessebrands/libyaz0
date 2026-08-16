@@ -1,3 +1,33 @@
+Version 1.2 -- 2026-08-16
+
+    This release adds a major rework of the compression pipeline, adding a
+    programmable matcher stage. It also improves the benchmark suite.
+
+    This release does not have any changes or additions to the ABI.
+
+  Features
+
+    * Programmable matcher stage that can be selected at configuration time.
+    * Ported the standard, Nintendo-like matcher to this new architecture.
+
+  Improvements
+
+    * yaz0bench now tracks MB/s and compression ratio for the totals table
+      that shows after a benchmark run is complete.
+    * Dropped scalar search from benchmark suite. It's too slow and muddies
+      results, and only exists as a fallback on big-endian machines.
+    * Adopted SWAR64 as the reference implementation for the benchmark.
+    * CPU detection functions as well as intrinsic wrappers moved to their own
+      module within the library.
+    * The testing suite can now be configured for round-tripping instead of
+      comparing to golden references, in preparation of new matcher strategies
+      that do not produce byte-exact output.
+
+  Bug Fixes
+
+    * yaz0_ctz64 now properly resolves to __builtin_ctzll.
+
+
 Version 1.1.2 -- 2026-08-12
 
     This release introduces support for ARM Neon.
