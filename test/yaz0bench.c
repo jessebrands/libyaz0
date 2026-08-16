@@ -48,23 +48,45 @@ static double bench_now(void) {
 #include <stdlib.h>
 #include <string.h>
 
-#include "yaz0/yaz0.h"
+#include "compress.h"
+#include "matcher.h"
 #include "test_corpus.h"
+#include "test_driver.h"
+#include "yaz0/yaz0.h"
 
 #define BENCHMARK_BUDGET       2.5
 #define BENCHMARK_PAYLOAD_SIZE (256 * 1024)
 #define BENCHMARK_MIN_ROUNDS   5
-#define BENCHMARK_MAX_IMPLS    8
+#define BENCHMARK_MAX_IMPLS    16
+#define BENCHMARK_LABEL_MAX    32
 
-static enum yaz0_search const benchmark_searches[] = {
-    YAZ0_SEARCH_SCALAR,
-    YAZ0_SEARCH_SSE2,
-    YAZ0_SEARCH_AVX2,
-    YAZ0_SEARCH_AVX512,
-    YAZ0_SEARCH_NEON,
-    YAZ0_SEARCH_SIMD128,
-    YAZ0_SEARCH_SWAR64,
+struct bench_config {
+    enum yaz0_matcher matcher;
+    enum yaz0_search search;
 };
+
+/*
+ * Curated rather than a cross product. A matcher that carries its own kernels
+ * ignores the search axis entirely, so pairing it with every instruction set
+ * would emit rows that are identical by construction. Which pairings are worth
+ * measuring is a judgement for the benchmark, not something the interface
+ * should have to describe.
+ */
+static struct bench_config const benchmark_configs[] = {
+    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_SCALAR},
+    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_SSE2},
+    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_AVX2},
+    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_AVX512},
+    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_NEON},
+    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_SIMD128},
+    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_SWAR64},
+};
+
+static void
+bench_label(char* const out, size_t const size, struct bench_config const config) {
+    snprintf(out, size, "%s/%s",
+             yaz0_matcher_name(config.matcher), yaz0_search_name(config.search));
+}
 
 struct benchmark {
     int level;
@@ -77,28 +99,31 @@ struct benchmark {
 };
 
 struct benchmark_impl {
-    enum yaz0_search search;
+    struct bench_config config;
     struct yaz0_stream stream;
     size_t produced;
     double best;
 };
 
 struct bench_totals {
-    enum yaz0_search search[BENCHMARK_MAX_IMPLS];
+    struct bench_config config[BENCHMARK_MAX_IMPLS];
     double seconds[BENCHMARK_MAX_IMPLS];
     size_t count;
 };
 
 static bool
-bench_impl_init(struct benchmark_impl* impl, enum yaz0_search const search,
+bench_impl_init(struct benchmark_impl* impl, struct bench_config const config,
                 uint32_t const src_size, int const level) {
     struct yaz0_compress_options options = yaz0_default_compress_options();
     options.level = level;
-    options.search = search;
+    options.search = config.search;
 
-    *impl = (struct benchmark_impl){.search = search, .best = -1.0};
+    *impl = (struct benchmark_impl){.config = config, .best = -1.0};
 
-    return yaz0_compress_init_with_options(&impl->stream, src_size, options) == YAZ0_OK;
+    // Pinned rather than selected: an unavailable matcher must fail here so
+    // that the row is dropped, never quietly measured as something else.
+    return yaz0_compress_init_with_matcher(&impl->stream, src_size, options, config.matcher)
+           == YAZ0_OK;
 }
 
 static size_t
@@ -106,8 +131,9 @@ bench_run_compress(struct benchmark_impl* impl, uint8_t const* src, size_t const
                    uint8_t* dst, size_t const dst_size, int const level) {
     struct yaz0_compress_options options = yaz0_default_compress_options();
     options.level = level;
-    options.search = impl->search;
+    options.search = impl->config.search;
 
+    // The matcher survives a reset, so it does not have to be restated here.
     if (yaz0_compress_reset(&impl->stream, (uint32_t) src_size, options) != YAZ0_OK) {
         return 0;
     }
@@ -128,9 +154,9 @@ bench_run_compress(struct benchmark_impl* impl, uint8_t const* src, size_t const
 static bool
 bench_measure(struct benchmark_impl* impls, size_t const count,
               uint8_t const* src, size_t const src_size,
-              uint8_t* dst, size_t const dst_size, uint8_t* golden,
+              uint8_t* dst, size_t const dst_size,
               int const level, double const budget, size_t* rounds) {
-    // Do an initial run to warm up caches and verify the algorithm.
+    // Do an initial run to warm up caches and verify each configuration.
     for (size_t i = 0; i < count; ++i) {
         size_t const produced = bench_run_compress(&impls[i], src, src_size, dst, dst_size, level);
         if (produced == 0) {
@@ -138,11 +164,19 @@ bench_measure(struct benchmark_impl* impls, size_t const count,
         }
         impls[i].produced = produced;
 
-        if (i == 0) {
-            memcpy(golden, dst, produced);
-        } else if (produced != impls[0].produced || memcmp(golden, dst, produced) != 0) {
-            fprintf(stderr, "error: %s output differs from %s\n",
-                    yaz0_search_name(impls[i].search), yaz0_search_name(impls[0].search));
+        // Matchers are allowed to disagree, so comparing rows against each
+        // other is no longer a correctness test. What has to hold for every
+        // configuration is that its output decodes back to the input.
+        struct run_result const restored = run_decompress_chunked(dst, produced, 0, 0);
+        bool const ok = restored.result == YAZ0_STREAM_END
+                        && restored.total_out == src_size
+                        && (src_size == 0 || memcmp(restored.out, src, src_size) == 0);
+        free(restored.out);
+
+        if (!ok) {
+            char label[BENCHMARK_LABEL_MAX];
+            bench_label(label, sizeof label, impls[i].config);
+            fprintf(stderr, "error: %s does not round-trip\n", label);
             return false;
         }
     }
@@ -179,9 +213,8 @@ bench_compress(enum corpus_profile const profile, int const level,
 
     uint8_t* data = malloc(BENCHMARK_PAYLOAD_SIZE);
     uint8_t* out = malloc(out_size);
-    uint8_t* golden = malloc(out_size);
 
-    if (data == NULL || out == NULL || golden == NULL) {
+    if (data == NULL || out == NULL) {
         fprintf(stderr, "error: out of memory\n");
         goto done;
     }
@@ -191,36 +224,40 @@ bench_compress(enum corpus_profile const profile, int const level,
     struct benchmark_impl impls[BENCHMARK_MAX_IMPLS];
     size_t count = 0;
 
-    if (use_reference && bench_impl_init(&impls[count], YAZ0_SEARCH_REFERENCE, BENCHMARK_PAYLOAD_SIZE, level)) {
+    struct bench_config const reference = {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_REFERENCE};
+    if (use_reference && bench_impl_init(&impls[count], reference, BENCHMARK_PAYLOAD_SIZE, level)) {
         ++count;
     }
 
-    for (size_t i = 0; i < sizeof benchmark_searches / sizeof benchmark_searches[0]; ++i) {
+    for (size_t i = 0; i < sizeof benchmark_configs / sizeof benchmark_configs[0]; ++i) {
         if (count == BENCHMARK_MAX_IMPLS) {
             break;
         }
-        if (bench_impl_init(&impls[count], benchmark_searches[i], BENCHMARK_PAYLOAD_SIZE, level)) {
+        if (bench_impl_init(&impls[count], benchmark_configs[i], BENCHMARK_PAYLOAD_SIZE, level)) {
             ++count;
         }
     }
 
     if (count == 0) {
-        fprintf(stderr, "error: no search implementations available\n");
+        fprintf(stderr, "error: no configurations available\n");
         goto done;
     }
 
     size_t rounds = 0;
     if (bench_measure(impls, count, data, BENCHMARK_PAYLOAD_SIZE,
-                      out, out_size, golden, level, budget, &rounds)) {
+                      out, out_size, level, budget, &rounds)) {
         double const base = impls[0].best;
 
         for (size_t i = 0; i < count; ++i) {
             double const best = impls[i].best;
 
-            printf("%15s/%1d  %-9s  %10.2f MB/s  %10.2f MB/s  %8.2f %%  %9.2f msec  %7.2fx  %6zu\n",
+            char label[BENCHMARK_LABEL_MAX];
+            bench_label(label, sizeof label, impls[i].config);
+
+            printf("%15s/%1d  %-18s  %10.2f MB/s  %10.2f MB/s  %8.2f %%  %9.2f msec  %7.2fx  %6zu\n",
                    corpus_profile_name(profile),
                    level,
-                   yaz0_search_name(impls[i].search),
+                   label,
                    (double) BENCHMARK_PAYLOAD_SIZE / best / 1024.0 / 1024.0,
                    (double) impls[i].produced / best / 1024.0 / 1024.0,
                    (double) impls[i].produced / (double) BENCHMARK_PAYLOAD_SIZE * 100.0,
@@ -230,7 +267,7 @@ bench_compress(enum corpus_profile const profile, int const level,
 
             totals->count = count;
             for (size_t k = 0; k < count; ++k) {
-                totals->search[k] = impls[k].search;
+                totals->config[k] = impls[k].config;
                 totals->seconds[k] += impls[k].best;
             }
         }
@@ -241,7 +278,6 @@ bench_compress(enum corpus_profile const profile, int const level,
     }
 
 done:
-    free(golden);
     free(out);
     free(data);
 }
@@ -293,8 +329,8 @@ int main(int argc, char** argv) {
     static struct bench_totals totals[sizeof levels / sizeof levels[0]];
 
     // Look ma, structured output!
-    printf("%17s  %-9s  %15s  %15s  %10s  %14s  %8s  %6s\n",
-           "name", "impl", "in", "out", "ratio", "best", "rel", "rounds");
+    printf("%17s  %-18s  %15s  %15s  %10s  %14s  %8s  %6s\n",
+           "name", "matcher/impl", "in", "out", "ratio", "best", "rel", "rounds");
 
     for (size_t p = 0; p < sizeof profiles / sizeof profiles[0]; ++p) {
         for (size_t l = 0; l < sizeof levels / sizeof levels[0]; ++l) {
@@ -302,15 +338,18 @@ int main(int argc, char** argv) {
         }
     }
 
-    printf("\n%17s    %14s  %8s\n", "impl", "total", "rel");
+    printf("\n%20s    %14s  %8s\n", "matcher/impl", "total", "rel");
     for (size_t l = 0; l < sizeof levels / sizeof levels[0]; ++l) {
         if (totals[l].count == 0) {
             continue;
         }
 
         for (size_t k = 0; k < totals[l].count; ++k) {
-            printf("%15s/%1d    %11.2f ms  %7.2fx\n",
-                   yaz0_search_name(totals[l].search[k]),
+            char label[BENCHMARK_LABEL_MAX];
+            bench_label(label, sizeof label, totals[l].config[k]);
+
+            printf("%18s/%1d    %11.2f ms  %7.2fx\n",
+                   label,
                    levels[l],
                    totals[l].seconds[k] * 1000.0,
                    totals[l].seconds[0] / totals[l].seconds[k]);
