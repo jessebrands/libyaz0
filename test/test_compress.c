@@ -55,6 +55,14 @@ int main(int argc, char** argv) {
         fixture.matcher
     );
 
+    if (run.result == YAZ0_UNSUPPORTED && fixture.test.expected_result != YAZ0_UNSUPPORTED) {
+        fprintf(stderr, "SKIP:   matcher '%s' is unavailable in this build\n",
+                yaz0_matcher_name(fixture.matcher));
+        free(run.out);
+        free_test_fixture(&fixture.test);
+        return 2;
+    }
+
     bool passed = assert_run(run, fixture.test.expected_result);
 
     if (!assert_total_in(run, fixture.test.size, 0)) {

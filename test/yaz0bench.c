@@ -100,6 +100,8 @@ struct benchmark_impl {
 struct bench_totals {
     struct bench_config config[BENCHMARK_MAX_IMPLS];
     double seconds[BENCHMARK_MAX_IMPLS];
+    size_t bytes_in[BENCHMARK_MAX_IMPLS];
+    size_t bytes_out[BENCHMARK_MAX_IMPLS];
     size_t count;
 };
 
@@ -256,12 +258,14 @@ bench_compress(enum corpus_profile const profile, int const level,
                    best * 1000.0,
                    base / best,
                    rounds);
+        }
 
-            totals->count = count;
-            for (size_t k = 0; k < count; ++k) {
-                totals->config[k] = impls[k].config;
-                totals->seconds[k] += impls[k].best;
-            }
+        totals->count = count;
+        for (size_t k = 0; k < count; ++k) {
+            totals->config[k] = impls[k].config;
+            totals->seconds[k] += impls[k].best;
+            totals->bytes_in[k] += BENCHMARK_PAYLOAD_SIZE;
+            totals->bytes_out[k] += impls[k].produced;
         }
     }
 
@@ -322,7 +326,7 @@ int main(int argc, char** argv) {
 
     // Look ma, structured output!
     printf("%17s  %-18s  %15s  %15s  %10s  %14s  %8s  %6s\n",
-           "name", "matcher/impl", "in", "out", "ratio", "best", "rel", "rounds");
+           "name", "matcher/search", "in", "out", "ratio", "best", "rel", "rounds");
 
     for (size_t p = 0; p < sizeof profiles / sizeof profiles[0]; ++p) {
         for (size_t l = 0; l < sizeof levels / sizeof levels[0]; ++l) {
@@ -330,7 +334,9 @@ int main(int argc, char** argv) {
         }
     }
 
-    printf("\n%20s    %14s  %8s\n", "matcher/impl", "total", "rel");
+    printf("\n%20s    %14s  %13s  %8s  %10s  %8s\n",
+           "matcher/search", "total", "speed", "rel", "ratio", "size");
+
     for (size_t l = 0; l < sizeof levels / sizeof levels[0]; ++l) {
         if (totals[l].count == 0) {
             continue;
@@ -340,11 +346,16 @@ int main(int argc, char** argv) {
             char label[BENCHMARK_LABEL_MAX];
             bench_label(label, sizeof label, totals[l].config[k]);
 
-            printf("%18s/%1d    %11.2f ms  %7.2fx\n",
+            printf("%18s/%1d    %11.2f ms  %8.2f MB/s  %7.2fx  %8.2f %%  %7.3fx\n",
                    label,
                    levels[l],
                    totals[l].seconds[k] * 1000.0,
-                   totals[l].seconds[0] / totals[l].seconds[k]);
+                   // Throughput is measured on input consumed, which is what
+                   // "compresses at N MB/s" conventionally means.
+                   (double) totals[l].bytes_in[k] / totals[l].seconds[k] / 1024.0 / 1024.0,
+                   totals[l].seconds[0] / totals[l].seconds[k],
+                   (double) totals[l].bytes_out[k] / (double) totals[l].bytes_in[k] * 100.0,
+                   (double) totals[l].bytes_out[k] / (double) totals[l].bytes_out[0]);
         }
     }
 

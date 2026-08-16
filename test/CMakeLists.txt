@@ -66,7 +66,9 @@ function(yaz0_add_test YAZ0_TEST_NAME)
                     "${ARG_DECOMPRESSED_FILE}")
         endif ()
 
-        set_tests_properties("${YAZ0_CASE}" PROPERTIES LABELS "compress")
+        set_tests_properties("${YAZ0_CASE}" PROPERTIES
+                LABELS "compress"
+                SKIP_RETURN_CODE 2)
     endforeach ()
 
     add_test(NAME "Decompress.${YAZ0_TEST_NAME}"
