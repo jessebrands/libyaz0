@@ -122,8 +122,3 @@ bool
 yaz0_neon_supported(void) {
     return YAZ0_HAVE_NEON;
 }
-
-bool
-yaz0_little_endian(void) {
-    return YAZ0_LITTLE_ENDIAN;
-}

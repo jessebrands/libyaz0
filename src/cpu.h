@@ -131,9 +131,6 @@ yaz0_ctz64(uint64_t const mask) {
 }
 
 bool
-yaz0_little_endian(void);
-
-bool
 yaz0_sse2_supported(void);
 
 bool

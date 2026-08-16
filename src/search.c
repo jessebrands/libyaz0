@@ -52,11 +52,6 @@ yaz0_search_reference(uint8_t const* data, size_t const start_pos, size_t const 
     return (longest_run >= YAZ0_MIN_MATCH) ? longest_run : 0;
 }
 
-static bool
-yaz0_search_reference_supported(void) {
-    return true;
-}
-
 size_t
 yaz0_length_scalar(uint8_t const* a, uint8_t const* b, size_t const max_lookahead) {
     size_t i = 0;
@@ -116,11 +111,6 @@ yaz0_search_scalar(uint8_t const* data, size_t const start_pos,
     return (longest_run >= YAZ0_MIN_MATCH) ? longest_run : 0;
 }
 
-static bool
-yaz0_search_scalar_supported(void) {
-    return true;
-}
-
 static struct yaz0_search_impl const implementations[] = {
 #if YAZ0_HAVE_AVX2
     {YAZ0_SEARCH_AVX2, "avx2", yaz0_search_avx2, yaz0_avx2_supported},
@@ -138,27 +128,33 @@ static struct yaz0_search_impl const implementations[] = {
 #endif
 
 #if YAZ0_LITTLE_ENDIAN
-    {YAZ0_SEARCH_SWAR64, "swar64", yaz0_search_swar64, yaz0_little_endian},
+    {YAZ0_SEARCH_SWAR64, "swar64", yaz0_search_swar64, NULL},
 #endif
-    {YAZ0_SEARCH_SCALAR, "scalar", yaz0_search_scalar, yaz0_search_scalar_supported},
-    {YAZ0_SEARCH_REFERENCE, "reference", yaz0_search_reference, yaz0_search_reference_supported},
+    {YAZ0_SEARCH_SCALAR, "scalar", yaz0_search_scalar, NULL},
+    {YAZ0_SEARCH_REFERENCE, "reference", yaz0_search_reference, NULL},
 };
 
 #define YAZ0_SEARCH_IMPL_COUNT (sizeof implementations / sizeof implementations[0])
+
+static bool
+is_impl_supported(struct yaz0_search_impl const* impl) {
+    assert(impl != NULL);
+    return impl->supported == NULL || impl->supported();
+}
 
 struct yaz0_search_impl const*
 yaz0_search_select(enum yaz0_search const search) {
     if (search == YAZ0_SEARCH_AUTO) {
         // Find the first supported option, which is the fastest by definition.
         for (size_t i = 0; i < YAZ0_SEARCH_IMPL_COUNT; ++i) {
-            if (implementations[i].supported()) {
+            if (is_impl_supported(&implementations[i])) {
                 return &implementations[i];
             }
         }
     } else {
         // Find the requested implementation and check if it's supported.
         for (size_t i = 0; i < YAZ0_SEARCH_IMPL_COUNT; ++i) {
-            if (implementations[i].id == search && implementations[i].supported()) {
+            if (implementations[i].id == search && is_impl_supported(&implementations[i])) {
                 return &implementations[i];
             }
         }
