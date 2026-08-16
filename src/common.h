@@ -41,6 +41,11 @@
 #define YAZ0_WINDOW_SIZE    (YAZ0_MAX_DISTANCE * 2 + YAZ0_MAX_MATCH)
 #define YAZ0_WINDOW_PADDING 64
 
+struct yaz0_token {
+    size_t length;
+    size_t distance;
+};
+
 enum yaz0_step {
     YAZ0_STEP_CONTINUE,
     YAZ0_STEP_RETURN,
