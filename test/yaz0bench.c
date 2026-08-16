@@ -65,21 +65,13 @@ struct bench_config {
     enum yaz0_search search;
 };
 
-/*
- * Curated rather than a cross product. A matcher that carries its own kernels
- * ignores the search axis entirely, so pairing it with every instruction set
- * would emit rows that are identical by construction. Which pairings are worth
- * measuring is a judgement for the benchmark, not something the interface
- * should have to describe.
- */
 static struct bench_config const benchmark_configs[] = {
-    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_SCALAR},
+    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_SWAR64},
     {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_SSE2},
+    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_SIMD128},
+    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_NEON},
     {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_AVX2},
     {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_AVX512},
-    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_NEON},
-    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_SIMD128},
-    {YAZ0_MATCHER_STANDARD, YAZ0_SEARCH_SWAR64},
 };
 
 static void
