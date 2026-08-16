@@ -9,9 +9,14 @@ set(YAZ0_CORPUS_GENERATORS
 set(YAZ0_TEST_DATA_DIR "" CACHE PATH
         "Directory of extracted Yaz0 test data (scanned recursively)")
 
+set(YAZ0_MATCHERS "standard")
+set(YAZ0_GOLDEN_MATCHERS "standard")
+
 add_library(yaz0test STATIC test_driver.c test_utility.c test_corpus.c)
 add_library(yaz0::yaz0test ALIAS yaz0test)
 target_link_libraries(yaz0test PUBLIC yaz0::yaz0_static)
+target_include_directories(yaz0test PUBLIC ${CMAKE_SOURCE_DIR}/src)
+
 target_compile_options(yaz0test PRIVATE ${YAZ0_WARNING_FLAGS})
 
 add_executable(test_compress test_compress.c)
@@ -48,11 +53,21 @@ function(yaz0_add_test YAZ0_TEST_NAME)
     set(YAZ0_TEST_OPTIONS
             -p ${ARG_PADDING} -i ${ARG_IN_CHUNK} -o ${ARG_OUT_CHUNK})
 
-    add_test(NAME "Compress.${YAZ0_TEST_NAME}"
-            COMMAND test_compress ${YAZ0_TEST_OPTIONS}
-            "${ARG_DECOMPRESSED_FILE}" "${ARG_COMPRESSED_FILE}")
+    foreach (YAZ0_MATCHER IN LISTS YAZ0_MATCHERS)
+        set(YAZ0_CASE "Compress.${YAZ0_MATCHER}.${YAZ0_TEST_NAME}")
 
-    set_tests_properties("Compress.${YAZ0_TEST_NAME}" PROPERTIES LABELS "compress")
+        if (YAZ0_MATCHER IN_LIST YAZ0_GOLDEN_MATCHERS)
+            add_test(NAME "${YAZ0_CASE}"
+                    COMMAND test_compress ${YAZ0_TEST_OPTIONS} -m ${YAZ0_MATCHER}
+                    "${ARG_DECOMPRESSED_FILE}" "${ARG_COMPRESSED_FILE}")
+        else ()
+            add_test(NAME "${YAZ0_CASE}"
+                    COMMAND test_compress ${YAZ0_TEST_OPTIONS} -m ${YAZ0_MATCHER}
+                    "${ARG_DECOMPRESSED_FILE}")
+        endif ()
+
+        set_tests_properties("${YAZ0_CASE}" PROPERTIES LABELS "compress")
+    endforeach ()
 
     add_test(NAME "Decompress.${YAZ0_TEST_NAME}"
             COMMAND test_decompress ${YAZ0_TEST_OPTIONS}

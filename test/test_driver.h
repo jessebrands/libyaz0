@@ -24,6 +24,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "matcher.h"
 #include "yaz0/yaz0.h"
 
 struct run_result {
@@ -48,6 +49,7 @@ struct compress_fixture {
     struct test_fixture test;
     int compression_level;
     size_t output_padding;
+    enum yaz0_matcher matcher;
 };
 
 struct decompress_fixture {
@@ -66,6 +68,14 @@ free_test_fixture(struct test_fixture* fixture);
 
 struct run_result
 run_compress_chunked(uint8_t const* data, size_t size, int level, size_t in_chunk, size_t out_chunk);
+
+struct run_result
+run_compress_chunked_with_matcher(uint8_t const* data, size_t size, int level,
+                                  size_t in_chunk, size_t out_chunk,
+                                  enum yaz0_matcher matcher);
+
+bool
+matcher_from_name(char const* name, enum yaz0_matcher* matcher);
 
 struct run_result
 run_decompress_chunked(uint8_t const* data, size_t size, size_t in_chunk, size_t out_chunk);

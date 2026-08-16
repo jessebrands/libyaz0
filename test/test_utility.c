@@ -148,7 +148,8 @@ parse_common_option(char const* arg, char const* value,
 }
 
 static bool
-parse_file_args(int argc, char** argv, struct test_fixture* fixture) {
+parse_file_args(int argc, char** argv, struct test_fixture* fixture,
+                bool const require_expected) {
     char const* in_filename = NULL;
     char const* expected_filename = NULL;
 
@@ -168,13 +169,22 @@ parse_file_args(int argc, char** argv, struct test_fixture* fixture) {
         }
     }
 
-    if (in_filename == NULL || expected_filename == NULL) {
+    if (in_filename == NULL) {
+        return false;
+    }
+
+    // Without a verification file the caller is asking for a round trip.
+    if (expected_filename == NULL && require_expected) {
         return false;
     }
 
     if (!load_file(in_filename, &fixture->data, &fixture->size)) {
         fprintf(stderr, "ERROR: Could not load input file '%s'\n", in_filename);
         return false;
+    }
+
+    if (expected_filename == NULL) {
+        return true;
     }
 
     if (!load_file(expected_filename, &fixture->expected, &fixture->expected_size)) {
@@ -193,6 +203,7 @@ parse_compress_fixture(int argc, char** argv, struct compress_fixture* fixture) 
     fixture->test.expected_result = YAZ0_STREAM_END;
     fixture->compression_level = YAZ0_DEFAULT_COMPRESSION;
     fixture->output_padding = 0;
+    fixture->matcher = YAZ0_MATCHER_STANDARD;
 
     for (int i = 1; i < argc; ++i) {
         char const* const arg = argv[i];
@@ -228,11 +239,18 @@ parse_compress_fixture(int argc, char** argv, struct compress_fixture* fixture) 
             }
             continue;
         }
+        if (strcmp(arg, "-m") == 0) {
+            if (!matcher_from_name(value, &fixture->matcher)) {
+                fprintf(stderr, "ERROR:  Unknown matcher '%s'\n", value);
+                return false;
+            }
+            continue;
+        }
 
         return false;
     }
 
-    if (!parse_file_args(argc, argv, &fixture->test)) {
+    if (!parse_file_args(argc, argv, &fixture->test, false)) {
         return false;
     }
 
@@ -276,7 +294,7 @@ parse_decompress_fixture(int argc, char** argv, struct decompress_fixture* fixtu
         return false;
     }
 
-    if (!parse_file_args(argc, argv, &fixture->test)) {
+    if (!parse_file_args(argc, argv, &fixture->test, true)) {
         return false;
     }
 

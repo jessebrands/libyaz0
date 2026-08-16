@@ -22,11 +22,40 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "compress.h"
 #include "test_driver.h"
 
 struct run_result
 run_compress_chunked(uint8_t const* data, size_t const size, int const level,
                      size_t const in_chunk, size_t const out_chunk) {
+    return run_compress_chunked_with_matcher(data, size, level, in_chunk, out_chunk,
+                                             YAZ0_MATCHER_AUTO);
+}
+
+static struct {
+    char const* name;
+    enum yaz0_matcher matcher;
+} const matcher_names[] = {
+    {"auto", YAZ0_MATCHER_AUTO},
+    {"standard", YAZ0_MATCHER_STANDARD},
+};
+
+bool
+matcher_from_name(char const* name, enum yaz0_matcher* matcher) {
+    for (size_t i = 0; i < sizeof matcher_names / sizeof matcher_names[0]; ++i) {
+        if (strcmp(name, matcher_names[i].name) == 0) {
+            *matcher = matcher_names[i].matcher;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+struct run_result
+run_compress_chunked_with_matcher(uint8_t const* data, size_t const size, int const level,
+                                  size_t const in_chunk, size_t const out_chunk,
+                                  enum yaz0_matcher const matcher) {
     struct run_result run = {0};
 
     if (size > UINT32_MAX) {
@@ -40,9 +69,14 @@ run_compress_chunked(uint8_t const* data, size_t const size, int const level,
     }
 
     struct yaz0_stream stream = {0};
-    run.result = yaz0_compress_init(&stream, level, (uint32_t) size);
+
+    struct yaz0_compress_options options = yaz0_default_compress_options();
+    options.level = level;
+
+    run.result = yaz0_compress_init_with_matcher(&stream, (uint32_t) size, options, matcher);
     if (run.result != YAZ0_OK) {
-        fprintf(stderr, "FAILED: Could not initialize compressor\n");
+        fprintf(stderr, "FAILED: Could not initialize compressor with matcher '%s'\n",
+                yaz0_matcher_name(matcher));
         return run;
     }
 
