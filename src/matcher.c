@@ -34,10 +34,38 @@ is_matcher_supported(struct yaz0_matcher_impl const* const matcher) {
     return matcher->supported == NULL || matcher->supported();
 }
 
+static enum yaz0_matcher
+matcher_for_level(int const level) {
+    (void) level;
+    return YAZ0_MATCHER_STANDARD;
+}
+
+static struct yaz0_matcher_impl const*
+find_matcher(enum yaz0_matcher const id) {
+    for (size_t i = 0; i < YAZ0_MATCHER_COUNT; ++i) {
+        if (matchers[i]->id == id && is_matcher_supported(matchers[i])) {
+            return matchers[i];
+        }
+    }
+
+    return NULL;
+}
+
 struct yaz0_matcher_impl const*
 yaz0_matcher_select(struct yaz0_matcher_config const* cfg) {
-    (void) cfg;
+    // An explicit request that cannot be honoured is an error rather than a
+    // fallback: a benchmark asking for one strategy must never quietly
+    // measure a different one.
+    if (cfg->matcher != YAZ0_MATCHER_AUTO) {
+        return find_matcher(cfg->matcher);
+    }
 
+    struct yaz0_matcher_impl const* const chosen = find_matcher(matcher_for_level(cfg->level));
+    if (chosen != NULL) {
+        return chosen;
+    }
+
+    // Policy picked something this build cannot provide; take what is left.
     for (size_t i = 0; i < YAZ0_MATCHER_COUNT; ++i) {
         if (is_matcher_supported(matchers[i])) {
             return matchers[i];
@@ -45,4 +73,19 @@ yaz0_matcher_select(struct yaz0_matcher_config const* cfg) {
     }
 
     return NULL;
+}
+
+char const*
+yaz0_matcher_name(enum yaz0_matcher const matcher) {
+    if (matcher == YAZ0_MATCHER_AUTO) {
+        return "auto";
+    }
+
+    for (size_t i = 0; i < YAZ0_MATCHER_COUNT; ++i) {
+        if (matchers[i]->id == matcher) {
+            return matchers[i]->name;
+        }
+    }
+
+    return "unknown";
 }

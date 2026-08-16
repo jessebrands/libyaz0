@@ -43,6 +43,7 @@ struct yaz0_compress_state {
    enum yaz0_result error;
 
    struct yaz0_matcher_impl const* matcher;
+   enum yaz0_matcher requested_matcher;
 
    //! Aligned pointer handed to the matcher, and the raw allocation backing
    //! it. They differ when a matcher asks for stricter alignment than the
@@ -73,5 +74,20 @@ struct yaz0_compress_state {
    size_t block_out;
    unsigned block_tokens;
 };
+
+/*!
+ * \brief Initializes a compressor with a specific matcher, bypassing policy
+ *        selection.
+ */
+enum yaz0_result
+yaz0_compress_init_with_matcher(struct yaz0_stream* stream, uint32_t uncompressed_size,
+                                struct yaz0_compress_options options,
+                                enum yaz0_matcher matcher);
+
+/*!
+ * \brief The matcher a compressor actually resolved to.
+ */
+enum yaz0_matcher
+yaz0_compress_matcher(struct yaz0_stream const* stream);
 
 #endif //LIBYAZ0_COMPRESS_H

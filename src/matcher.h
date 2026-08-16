@@ -24,13 +24,22 @@
 #include "search.h"
 
 enum yaz0_matcher {
-    YAZ0_MATCHER_STANDARD = 0,
+    YAZ0_MATCHER_AUTO = 0,
+    YAZ0_MATCHER_STANDARD = 1,
 };
 
+/*!
+ * Everything selection is allowed to reason about. Strategy is chosen by
+ * level: it is the speed-versus-ratio point the caller asked for. Which
+ * instruction set a matcher then uses internally is a separate axis, and
+ * `search` is what drives it.
+ */
 struct yaz0_matcher_config {
+    int level;
     size_t max_distance;
     uint32_t uncompressed_size;
     enum yaz0_search search;
+    enum yaz0_matcher matcher;
 };
 
 struct yaz0_matcher_impl {
@@ -57,5 +66,11 @@ extern struct yaz0_matcher_impl const yaz0_matcher_standard;
  */
 struct yaz0_matcher_impl const*
 yaz0_matcher_select(struct yaz0_matcher_config const* cfg);
+
+/*!
+ * \brief Name of a matcher, for tests and benchmarks.
+ */
+char const*
+yaz0_matcher_name(enum yaz0_matcher matcher);
 
 #endif //LIBYAZ0_MATCHER_H

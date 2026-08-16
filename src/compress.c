@@ -27,11 +27,13 @@
 #include "search.h"
 #include "stream.h"
 
+static int
+compress_effective_level(int const level) {
+    return (level == YAZ0_DEFAULT_COMPRESSION) ? YAZ0_BEST_COMPRESSION : level;
+}
+
 static size_t
-compress_search_distance(int level) {
-    if (level == YAZ0_DEFAULT_COMPRESSION) {
-        level = YAZ0_BEST_COMPRESSION;
-    }
+compress_search_distance(int const level) {
     if (level == YAZ0_NO_COMPRESSION) {
         return 0;
     }
@@ -90,17 +92,21 @@ static enum yaz0_result
 compress_configure(struct yaz0_compress_state* state,
                    uint32_t const uncompressed_size,
                    struct yaz0_compress_options const* options) {
+    int const level = compress_effective_level(options->level);
+
     state->mode = YAZ0_COMPRESS_HEADER;
     state->error = YAZ0_OK;
-    state->search_distance = compress_search_distance(options->level);
+    state->search_distance = compress_search_distance(level);
 
     struct yaz0_search_impl const* const impl = yaz0_search_select(options->search);
     state->search_id = (impl != NULL) ? impl->id : YAZ0_SEARCH_AUTO;
 
     struct yaz0_matcher_config const cfg = {
+        .level = level,
         .max_distance = state->search_distance,
         .uncompressed_size = uncompressed_size,
         .search = options->search,
+        .matcher = state->requested_matcher,
     };
 
     enum yaz0_result const configured = compress_configure_matcher(state, &cfg);
@@ -411,6 +417,42 @@ yaz0_compress_init(struct yaz0_stream* stream, int const level,
 }
 
 enum yaz0_result
+yaz0_compress_init_with_matcher(struct yaz0_stream* stream, uint32_t const uncompressed_size,
+                                struct yaz0_compress_options const options,
+                                enum yaz0_matcher const matcher) {
+    enum yaz0_result const result =
+        yaz0_compress_init_with_options(stream, uncompressed_size, options);
+    if (result != YAZ0_OK) {
+        return result;
+    }
+
+    if (matcher == YAZ0_MATCHER_AUTO) {
+        return YAZ0_OK;
+    }
+
+    struct yaz0_compress_state* state = stream->state;
+    state->requested_matcher = matcher;
+
+    enum yaz0_result const reconfigured = compress_configure(state, uncompressed_size, &options);
+    if (reconfigured != YAZ0_OK) {
+        yaz0_compress_end(stream);
+        return reconfigured;
+    }
+
+    return YAZ0_OK;
+}
+
+enum yaz0_matcher
+yaz0_compress_matcher(struct yaz0_stream const* stream) {
+    struct yaz0_compress_state const* state = yaz0_get_compress_state(stream);
+    if (state == NULL || state->matcher == NULL) {
+        return YAZ0_MATCHER_AUTO;
+    }
+
+    return state->matcher->id;
+}
+
+enum yaz0_result
 yaz0_compress_init_with_options(struct yaz0_stream* stream, uint32_t const uncompressed_size,
                                 struct yaz0_compress_options const options) {
     if (stream == NULL) {
@@ -444,6 +486,7 @@ yaz0_compress_init_with_options(struct yaz0_stream* stream, uint32_t const uncom
     state->matcher = NULL;
     state->matcher_state = NULL;
     state->matcher_alloc = NULL;
+    state->requested_matcher = YAZ0_MATCHER_AUTO;
 
     enum yaz0_result const configured = compress_configure(state, uncompressed_size, &options);
     if (configured != YAZ0_OK) {
