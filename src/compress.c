@@ -56,7 +56,7 @@ compress_validate_options(struct yaz0_compress_options const* options) {
 static enum yaz0_result
 compress_configure_matcher(struct yaz0_compress_state* state,
                            struct yaz0_matcher_config const* cfg) {
-    struct yaz0_matcher const* const matcher = yaz0_matcher_select(cfg);
+    struct yaz0_matcher_impl const* const matcher = yaz0_matcher_select(cfg);
     if (matcher == NULL) {
         return YAZ0_UNSUPPORTED;
     }
@@ -99,6 +99,7 @@ compress_configure(struct yaz0_compress_state* state,
 
     struct yaz0_matcher_config const cfg = {
         .max_distance = state->search_distance,
+        .uncompressed_size = uncompressed_size,
         .search = options->search,
     };
 

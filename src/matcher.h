@@ -23,21 +23,23 @@
 
 #include "search.h"
 
+enum yaz0_matcher {
+    YAZ0_MATCHER_STANDARD = 0,
+};
+
 struct yaz0_matcher_config {
     size_t max_distance;
+    uint32_t uncompressed_size;
     enum yaz0_search search;
 };
 
-struct yaz0_matcher {
-    enum yaz0_search id;
+struct yaz0_matcher_impl {
+    enum yaz0_matcher id;
     char const* name;
     bool (*supported)(void);
-
     size_t (*state_size)(void);
     size_t (*state_align)(void);
-
     void (*init)(void* self, struct yaz0_matcher_config const* cfg);
-    void (*reset)(void* self);
     void (*slide)(void* self, size_t drop);
 
     struct yaz0_token (*find)(void* self, uint8_t const* window,
@@ -48,12 +50,12 @@ struct yaz0_matcher {
  * \brief Generic matcher: greedy with one-position lazy lookahead, delegating
  *        the scan to whichever search implementation was selected.
  */
-extern struct yaz0_matcher const yaz0_matcher_std;
+extern struct yaz0_matcher_impl const yaz0_matcher_standard;
 
 /*!
- * \brief Picks the matcher best suited to the configuration.
+ * \brief Picks the best matcher for the configuration.
  */
-struct yaz0_matcher const*
+struct yaz0_matcher_impl const*
 yaz0_matcher_select(struct yaz0_matcher_config const* cfg);
 
 #endif //LIBYAZ0_MATCHER_H

@@ -23,18 +23,18 @@
 
 #include "matcher.h"
 
-static struct yaz0_matcher const* const matchers[] = {
-    &yaz0_matcher_std,
+static struct yaz0_matcher_impl const* const matchers[] = {
+    &yaz0_matcher_standard,
 };
 
 #define YAZ0_MATCHER_COUNT (sizeof matchers / sizeof matchers[0])
 
 static bool
-is_matcher_supported(struct yaz0_matcher const* const matcher) {
+is_matcher_supported(struct yaz0_matcher_impl const* const matcher) {
     return matcher->supported == NULL || matcher->supported();
 }
 
-struct yaz0_matcher const*
+struct yaz0_matcher_impl const*
 yaz0_matcher_select(struct yaz0_matcher_config const* cfg) {
     (void) cfg;
 

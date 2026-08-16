@@ -132,28 +132,18 @@ init(void* self, struct yaz0_matcher_config const* cfg) {
 }
 
 static void
-reset(void* self) {
-    struct matcher_state* state = self;
-
-    state->deferred = false;
-    state->deferred_length = 0;
-    state->deferred_distance = 0;
-}
-
-static void
 slide(void* self, size_t const drop) {
     (void) self;
     (void) drop;
 }
 
-struct yaz0_matcher const yaz0_matcher_std = {
-    .id = YAZ0_SEARCH_AUTO,
+struct yaz0_matcher_impl const yaz0_matcher_standard = {
+    .id = YAZ0_MATCHER_STANDARD,
     .name = "std",
     .supported = NULL,
     .state_size = state_size,
     .state_align = state_align,
     .init = init,
-    .reset = reset,
     .slide = slide,
     .find = find_match,
 };

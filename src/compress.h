@@ -42,7 +42,7 @@ struct yaz0_compress_state {
    enum yaz0_compress_mode mode;
    enum yaz0_result error;
 
-   struct yaz0_matcher const* matcher;
+   struct yaz0_matcher_impl const* matcher;
 
    //! Aligned pointer handed to the matcher, and the raw allocation backing
    //! it. They differ when a matcher asks for stricter alignment than the
