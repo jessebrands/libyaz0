@@ -21,37 +21,12 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#include "cpu.h"
 #include "search.h"
 
 #if YAZ0_HAVE_NEON
 
 #include <arm_neon.h>
-
-static inline unsigned
-yaz0_ctz64(uint64_t const mask) {
-    assert(mask != 0);
-#if defined __GNUC__ || defined __clang__
-    return (unsigned) __builtin_ctzll(mask);
-#elif defined _MSC_VER && (defined _M_X64 || defined _M_ARM64)
-    unsigned long index;
-    _BitScanForward64(&index, mask);
-    return (unsigned) index;
-#elif defined _MSC_VER
-    // _BitScanForward64 does not exist on 32-bit MSVC.
-    unsigned long index;
-    if (_BitScanForward(&index, (unsigned long) (mask & UINT32_C(0xFFFFFFFF)))) {
-        return (unsigned) index;
-    }
-    _BitScanForward(&index, (unsigned long) (mask >> 32));
-    return (unsigned) index + 32;
-#else
-    unsigned i = 0;
-    while (((mask >> i) & 1) == 0) {
-        ++i;
-    }
-    return i;
-#endif
-}
 
 // The brilliant folks at ARM decided in all their wisdom that PMOVMASKB, probably the
 // the most popular SIMD instruction of all time, is just not cool enough for them.
@@ -268,8 +243,3 @@ yaz0_search_neon(uint8_t const *data, size_t const start_pos, size_t const offse
 }
 
 #endif // YAZ0_HAVE_NEON
-
-bool
-yaz0_search_neon_supported(void) {
-    return YAZ0_HAVE_NEON;
-}

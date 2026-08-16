@@ -25,63 +25,6 @@
 
 #include "yaz0/yaz0.h"
 
-#if defined __BYTE_ORDER__ && defined __ORDER_LITTLE_ENDIAN__
-#  define YAZ0_LITTLE_ENDIAN (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-#elif defined _MSC_VER
-   /* MSVC defines no byte-order macro and targets no big-endian platform. */
-#  define YAZ0_LITTLE_ENDIAN 1
-#else
-#  define YAZ0_LITTLE_ENDIAN 0
-#endif
-
-#if defined __x86_64__ || defined _M_X64 || defined __i386__ || defined _M_IX86
-#  define YAZ0_TARGET_X86 1
-#else
-#  define YAZ0_TARGET_X86 0
-#endif
-
-#if defined __aarch64__ || defined _M_ARM64
-#  define YAZ0_TARGET_AARCH64 1
-#else
-#  define YAZ0_TARGET_AARCH64 0
-#endif
-
-#if defined __wasm__
-#  define YAZ0_TARGET_WASM 1
-#else
-#  define YAZ0_TARGET_WASM 0
-#endif
-
-#if YAZ0_TARGET_X86 && !defined YAZ0_DISABLE_SSE2
-#  define YAZ0_HAVE_SSE2 1
-#else
-#  define YAZ0_HAVE_SSE2 0
-#endif
-
-#if YAZ0_TARGET_X86 && !defined YAZ0_DISABLE_AVX2
-#  define YAZ0_HAVE_AVX2 1
-#else
-#  define YAZ0_HAVE_AVX2 0
-#endif
-
-#if YAZ0_TARGET_AARCH64 && !defined YAZ0_DISABLE_NEON
-#  define YAZ0_HAVE_NEON 1
-#else
-#  define YAZ0_HAVE_NEON 0
-#endif
-
-#if YAZ0_TARGET_WASM && !defined YAZ0_DISABLE_SIMD128
-#  define YAZ0_HAVE_SIMD128 1
-#else
-#  define YAZ0_HAVE_SIMD128 0
-#endif
-
-#if YAZ0_LITTLE_ENDIAN
-#  define YAZ0_HAVE_SWAR64 1
-#else
-#  define YAZ0_HAVE_SWAR64 0
-#endif
-
 #define YAZ0_MAGIC "Yaz0"
 #define YAZ0_HEADER_SIZE 16
 #define YAZ0_MAX_DISTANCE 4096

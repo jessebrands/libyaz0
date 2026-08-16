@@ -123,22 +123,22 @@ yaz0_search_scalar_supported(void) {
 
 static struct yaz0_search_impl const implementations[] = {
 #if YAZ0_HAVE_AVX2
-    {YAZ0_SEARCH_AVX2, "avx2", yaz0_search_avx2, yaz0_search_avx2_supported},
+    {YAZ0_SEARCH_AVX2, "avx2", yaz0_search_avx2, yaz0_avx2_supported},
 #endif
 #if YAZ0_HAVE_SSE2
-    {YAZ0_SEARCH_SSE2, "sse2", yaz0_search_sse2, yaz0_search_sse2_supported},
+    {YAZ0_SEARCH_SSE2, "sse2", yaz0_search_sse2, yaz0_sse2_supported},
 #endif
 
 #if YAZ0_HAVE_NEON
-    {YAZ0_SEARCH_NEON, "neon", yaz0_search_neon, yaz0_search_neon_supported},
+    {YAZ0_SEARCH_NEON, "neon", yaz0_search_neon, yaz0_neon_supported},
 #endif
 
 #if YAZ0_HAVE_SIMD128
-    {YAZ0_SEARCH_SIMD128, "simd128", yaz0_search_simd128, yaz0_search_simd128_supported},
+    {YAZ0_SEARCH_SIMD128, "simd128", yaz0_search_simd128, yaz0_simd128_supported},
 #endif
 
-#if YAZ0_HAVE_SWAR64
-    {YAZ0_SEARCH_SWAR64, "swar64", yaz0_search_swar64, yaz0_search_swar64_supported},
+#if YAZ0_LITTLE_ENDIAN
+    {YAZ0_SEARCH_SWAR64, "swar64", yaz0_search_swar64, yaz0_little_endian},
 #endif
     {YAZ0_SEARCH_SCALAR, "scalar", yaz0_search_scalar, yaz0_search_scalar_supported},
     {YAZ0_SEARCH_REFERENCE, "reference", yaz0_search_reference, yaz0_search_reference_supported},

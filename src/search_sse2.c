@@ -20,56 +20,12 @@
 
 #include <assert.h>
 
+#include "cpu.h"
 #include "search.h"
-
-#if YAZ0_HAVE_SSE2
-#  if defined _MSC_VER
-#    include <intrin.h>
-#  else
-#    include <cpuid.h>
-#  endif
-#endif
-
-bool
-yaz0_search_sse2_supported(void) {
-#if !YAZ0_HAVE_SSE2
-    return false;
-#elif defined __x86_64__ || defined _M_X64
-    return true;
-#elif defined _MSC_VER
-    int regs[4];
-    __cpuid(regs, 1);
-    return (regs[3] & (1 << 26)) != 0;
-#else
-    unsigned eax, ebx, ecx, edx;
-    if (!__get_cpuid(1, &eax, &ebx, &ecx, &edx)) {
-        return false;
-    }
-    return (edx & (1u << 26)) != 0;
-#endif
-}
 
 #if YAZ0_HAVE_SSE2
 
 #include <emmintrin.h>
-
-static inline unsigned
-yaz0_ctz32(uint32_t const mask) {
-    assert(mask != 0);
-#if defined __GNUC__ || defined __clang__
-    return (unsigned) __builtin_ctz(mask);
-#elif defined _MSC_VER
-    unsigned long index;
-    _BitScanForward(&index, mask);
-    return (unsigned) index;
-#else
-    unsigned i = 0;
-    while ((mask & (1u << i)) == 0) {
-        ++i;
-    }
-    return i;
-#endif
-}
 
 static inline size_t
 yaz0_length_sse2(uint8_t const* a, uint8_t const* b, size_t const max_lookahead) {

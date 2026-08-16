@@ -28,6 +28,7 @@ set(YAZ0_PUBLIC_HEADERS
 set(YAZ0_PRIVATE_HEADERS
         src/common.h
         src/compress.h
+        src/cpu.h
         src/decompress.h
         src/search.h
         src/stream.h)
@@ -36,6 +37,7 @@ set(YAZ0_SOURCES
         src/yaz0.c
         src/common.c
         src/compress.c
+        src/cpu.c
         src/decompress.c
         src/search.c
         src/search_avx2.c
