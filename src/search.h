@@ -25,6 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "cpu.h"
 #include "common.h"
 #include "yaz0/yaz0.h"
 
@@ -68,7 +69,7 @@ size_t
 yaz0_search_scalar(uint8_t const* data, size_t start_pos, size_t offset,
                    size_t max_lookahead, size_t* match_pos);
 
-#if YAZ0_HAVE_SWAR64
+#if YAZ0_LITTLE_ENDIAN
 /*!
  * \brief Fast, portable search implementation making use of SWAR techniques.
  * \see yaz0_search_func
@@ -79,17 +80,11 @@ yaz0_search_swar64(uint8_t const* data, size_t start_pos, size_t offset,
                  size_t max_lookahead, size_t* match_pos);
 #endif
 
-bool
-yaz0_search_swar64_supported(void);
-
 #if YAZ0_HAVE_SSE2
 size_t
 yaz0_search_sse2(uint8_t const* data, size_t start_pos, size_t offset,
                  size_t max_lookahead, size_t* match_pos);
 #endif
-
-bool
-yaz0_search_sse2_supported(void);
 
 #if YAZ0_HAVE_AVX2
 size_t
@@ -97,26 +92,17 @@ yaz0_search_avx2(uint8_t const* data, size_t start_pos,
                  size_t offset, size_t max_lookahead, size_t* match_pos);
 #endif
 
-bool
-yaz0_search_avx2_supported(void);
-
 #if YAZ0_HAVE_NEON
 size_t
 yaz0_search_neon(uint8_t const* data, size_t start_pos, size_t offset,
                  size_t max_lookahead, size_t* match_pos);
 #endif
 
-bool
-yaz0_search_neon_supported(void);
-
 #if YAZ0_HAVE_SIMD128
 size_t
 yaz0_search_simd128(uint8_t const* data, size_t start_pos, size_t offset,
                     size_t max_lookahead, size_t* match_pos);
 #endif
-
-bool
-yaz0_search_simd128_supported(void);
 
 struct yaz0_search_impl const*
 yaz0_search_select(enum yaz0_search search);

@@ -21,15 +21,10 @@
 #include <assert.h>
 #include <string.h>
 
+#include "cpu.h"
 #include "search.h"
 
-#if YAZ0_HAVE_SWAR64
-
-#if defined _MSC_VER && (defined _M_X64 || defined _M_ARM64)
-#include <intrin.h>
-#elif defined _MSC_VER
-#include <intrin.h>
-#endif
+#if YAZ0_LITTLE_ENDIAN
 
 static inline uint64_t
 yaz0_load64(uint8_t const* const p) {
@@ -41,32 +36,6 @@ yaz0_load64(uint8_t const* const p) {
 static inline uint64_t
 yaz0_splat64(uint8_t const b) {
     return UINT64_C(0x0101010101010101) * b;
-}
-
-static inline unsigned
-yaz0_ctz64(uint64_t const mask) {
-    assert(mask != 0);
-#if defined __GNUC__ || defined __clang__
-    return (unsigned) __builtin_ctzll(mask);
-#elif defined _MSC_VER && (defined _M_X64 || defined _M_ARM64)
-    unsigned long index;
-    _BitScanForward64(&index, mask);
-    return (unsigned) index;
-#elif defined _MSC_VER
-    // _BitScanForward64 does not exist on 32-bit MSVC.
-    unsigned long index;
-    if (_BitScanForward(&index, (unsigned long) (mask & UINT32_C(0xFFFFFFFF)))) {
-        return (unsigned) index;
-    }
-    _BitScanForward(&index, (unsigned long) (mask >> 32));
-    return (unsigned) index + 32;
-#else
-    unsigned i = 0;
-    while (((mask >> i) & 1) == 0) {
-        ++i;
-    }
-    return i;
-#endif
 }
 
 static inline size_t
@@ -158,9 +127,4 @@ size_t yaz0_search_swar64(uint8_t const* data, size_t start_pos, size_t offset, 
     return (longest_run >= YAZ0_MIN_MATCH) ? longest_run : 0;
 }
 
-#endif // YAZ0_HAVE_SWAR64
-
-bool
-yaz0_search_swar64_supported(void) {
-    return YAZ0_HAVE_SWAR64;
-}
+#endif // YAZ0_LITTLE_ENDIAN

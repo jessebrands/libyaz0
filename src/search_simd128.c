@@ -21,25 +21,12 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#include "cpu.h"
 #include "search.h"
 
 #if YAZ0_HAVE_SIMD128
 
 #include <wasm_simd128.h>
-
-static inline unsigned
-yaz0_ctz32(uint32_t const mask) {
-    assert(mask != 0);
-#if defined __GNUC__ || defined __clang__
-    return (unsigned) __builtin_ctz(mask);
-#else
-    unsigned i = 0;
-    while ((mask & (1u << i)) == 0) {
-        ++i;
-    }
-    return i;
-#endif
-}
 
 static inline size_t
 yaz0_length_simd128(uint8_t const* a, uint8_t const* b, size_t const max_lookahead) {
@@ -135,8 +122,3 @@ yaz0_search_simd128(uint8_t const* data, size_t const start_pos, size_t const of
 }
 
 #endif // YAZ0_HAVE_SIMD128
-
-bool
-yaz0_search_simd128_supported(void) {
-    return YAZ0_HAVE_SIMD128;
-}
