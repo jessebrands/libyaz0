@@ -34,7 +34,6 @@ bench_now(void) {
     return (double) now.QuadPart * period;
 }
 #else
-#  define _POSIX_C_SOURCE 199309L
 #  include <time.h>
 static double bench_now(void) {
     struct timespec ts;
